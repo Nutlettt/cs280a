@@ -1,16 +1,53 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Portfolio</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>CS280A Course Projects - ZHOU Guanren</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- external stylesheet -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Welcome to My CS180 Portfolio!</h1>
-    <a href="./1/index.html">Project 1</a>
+
+  <!-- header -->
+  <header>
+    <h1>CS280A: Intro to Computer Vision and Computational Photography</h1>
+    <h2>Course Projects of ZHOU Guanren (周冠人)</h2>
+    <!-- Theme toggle button (for style.css / script.js) -->
+    <button id="theme-toggle" aria-label="Toggle color theme">🌓 Change to Dark/Light Theme</button>
+  </header>
+
+  <!-- Projects -->
+  <main>
+    <h2>List of Projects:</h2>
+
+    <div class="project-cards">
+      <!-- Project 0 Card -->
+      <div class="card project-card">
+        <div class="project-img">
+          <img class="responsive" src="proj_0/media/x100vi.jpeg" alt="Guanren's Fujifilm X100VI">
+        </div>
+        <div class="project-info">
+          <h3><a href="proj_0/index.html">Project 0: Becoming Friends with Your Camera</a></h3>
+          <p>Explore several camera parameters and their properties through some sample photos and visual 
+            results. (Unfortunately, my Fujifilm X100VI, attached left, is a fixed focus camera, so I have 
+            to do it with my smartphone. 😢)</p>
+        </div>
+      </div>
+      <!-- Continue adding more project cards -->
+    </div>
+  </main>
+
+  <!-- footer -->
+  <footer>
+    <p>© 2025 ZHOU Guanren |
+      <a href="mailto:guanren_zhou@berkeley.edu">Email</a> |
+      <a href="https://github.com/Nutlettt" target="_blank" rel="noopener noreferrer">GitHub</a> |
+      <a href="https://stairlab.berkeley.edu/people/guanren-zhou/" target="_blank" rel="noopener noreferrer">STAIR Lab</a>
+    </p>
+  </footer>
+
+  <!-- Scripts: Theme toggle & navigation highlight -->
+  <script src="script.js" defer></script>
 </body>
 </html>
