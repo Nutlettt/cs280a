@@ -1,11 +1,11 @@
 /* ================================
-   Theme Toggle with Memory & System
-   ================================ */
+  Theme toggle with memory & system
+  ================================ */
 
 const root = document.documentElement;
 const STORAGE_KEY = 'site-theme'; // 'light' | 'dark'
 
-// Determine if the system prefers light mode
+// Detect if the system prefers light mode
 function systemPrefersLight() {
   return window.matchMedia &&
          window.matchMedia('(prefers-color-scheme: light)').matches;
@@ -20,7 +20,7 @@ function applyTheme(theme) {
   }
 }
 
-// Initialize theme: prefer local storage, fall back to system
+// Initialize theme: prefer localStorage, fall back to system
 function initTheme() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -35,25 +35,25 @@ function initTheme() {
   }
 }
 
-// Toggle theme and save
+// Toggle theme and persist choice
 function toggleTheme() {
   const isLight = root.classList.contains('theme-light');
   const next = isLight ? 'dark' : 'light';
-  try { localStorage.setItem(STORAGE_KEY, next); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, next); } catch (_) {}
   applyTheme(next);
 }
 
 // Initialize
 initTheme();
 
-// Bind button
+// Bind theme toggle button
 const btn = document.getElementById('theme-toggle');
 if (btn) {
   btn.addEventListener('click', toggleTheme);
 }
 
 /* =====================
-   Highlight Active Link
+  Highlight active link
    ===================== */
 (function highlightActiveLink() {
   const here = window.location.pathname.replace(/\/index\.html?$/, '/');
@@ -64,3 +64,29 @@ if (btn) {
     if (path === here) a.classList.add('active');
   });
 })();
+
+// Sidebar toggle
+const sidebar = document.getElementById('sidebar');
+const toggleBtn = document.getElementById('sidebar-toggle');
+const expandBtn = document.getElementById('sidebar-expand');
+
+function updateSidebarButton() {
+  if (sidebar.classList.contains('collapsed')) {
+    expandBtn.style.display = 'block';
+  } else {
+    expandBtn.style.display = 'none';
+  }
+}
+
+if (sidebar && toggleBtn && expandBtn) {
+  toggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    updateSidebarButton();
+  });
+  expandBtn.addEventListener('click', () => {
+    sidebar.classList.remove('collapsed');
+    updateSidebarButton();
+  });
+  // Initialize button visibility
+  updateSidebarButton();
+}

@@ -1,7 +1,51 @@
+/* Projects */
+main hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 32px 0;
+}
+/* Top Navbar */
+.top-navbar {
+  width: 100%;
+  background: var(--card);
+  border-bottom: 2px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: var(--topbar-height);
+  box-shadow: none;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.navbar-left {
+  display: flex;
+  align-items: center;
+  font-size: 1.1em;
+  color: var(--heading);
+}
+.breadcrumb {
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* theme toggle is placed inside navbar; no absolute positioning needed */
+
 /* =========================
-   Theme color variables (default: dark)
-   ========================= */
+  Theme variables
+  ========================= */
 :root {
+  /* layout */
+  --topbar-height: 48px;
+  --sidebar-width: 180px;
+  --sidebar-width-sm: 140px;
+
+  /* colors */
   --bg: #1e1e1e;
   --text: #e0e0e0;
   --text-muted: #aaaaaa;
@@ -57,6 +101,7 @@ body {
   line-height: 1.6;
   background: var(--bg);
   color: var(--text);
+  position: relative;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -89,12 +134,18 @@ header {
   text-align: center;
   padding: 20px;
   border-bottom: 1px solid var(--line);
+  position: relative;
 }
 
 main {
   max-width: 880px;
   margin: 24px auto;
   padding: 0 16px;
+}
+/* On pages with a sidebar, let main span full width and center inner container instead */
+main.with-sidebar {
+  max-width: none;
+  margin: 24px 0;
 }
 
 footer {
@@ -191,15 +242,22 @@ img.responsive {
 
 /* Image grid (suitable for comparison images) */
 .gallery {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  justify-content: center;
+  flex-wrap: nowrap;
 }
 @media (min-width: 720px) {
-  .gallery { grid-template-columns: 1fr 1fr; }
+  .gallery { flex-direction: row; }
+}
+.gallery img {
+  max-width: 140px;
+  width: 100%;
+  height: auto;
 }
 
-/* ========== Top theme toggle button ========== */
+/* Theme toggle button */
 #theme-toggle {
   background: transparent;
   color: var(--text);
@@ -208,20 +266,100 @@ img.responsive {
   border-radius: 8px;
   cursor: pointer;
 }
-#theme-toggle:hover {
+#theme-toggle:hover { background: var(--card); }
+
+/* ===== Left Sidebar ===== */
+.sidebar-layout {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+}
+.with-sidebar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.main-center {
+  max-width: 800px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* When sidebar is visible, create left padding to avoid overlap while keeping content centered */
+.sidebar:not(.collapsed) ~ .with-sidebar {
+  padding-left: var(--sidebar-width);
+}
+/* When sidebar is collapsed, remove the padding and keep auto centering via inner container */
+.sidebar.collapsed ~ .with-sidebar {
+  padding-left: 0;
+}
+
+/* Sidebar styles */
+.sidebar {
+  position: fixed;
+  top: var(--topbar-height);
+  left: 0;
+  width: var(--sidebar-width);
+  height: calc(100% - var(--topbar-height));
   background: var(--card);
+  border-right: 1px solid var(--line);
+  padding: 10px;
+  overflow-y: auto;
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  z-index: 100;
 }
 
-/* ========== Details ========== */
-/* Respect system "reduce motion" setting */
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+/* Collapsed state */
+.sidebar.collapsed {
+  transform: translateX(-100%);
 }
 
-/* Print friendly (only print main content) */
-@media print {
-  header, nav, footer, #theme-toggle { display: none !important; }
-  main { max-width: 100%; margin: 0; padding: 0; }
-  body { background: #fff; color: #000; }
-  .card { border: 1px solid #ccc; box-shadow: none; }
+/* Sidebar toggle button */
+#sidebar-toggle {
+  display: block;
+  margin-bottom: 10px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .with-sidebar {
+    max-width: 98vw;
+    padding: 10px;
+  }
+  .sidebar {
+    width: var(--sidebar-width-sm);
+  }
+  /* Match the narrower sidebar width when visible */
+  .sidebar:not(.collapsed) ~ .with-sidebar {
+    padding-left: var(--sidebar-width-sm);
+  }
+}
+
+/* Sidebar navigation */
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.sidebar nav li {
+  margin: 8px 0;
+}
+.sidebar nav a {
+  color: var(--link);
+  text-decoration: none;
+}
+.sidebar nav a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
 }
