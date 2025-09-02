@@ -1,0 +1,26 @@
+/* Project 0 specific styles */
+
+/* Larger variant for selfie gallery (Part 1) */
+.gallery.gallery-large img {
+  max-width: 360px;
+}
+
+/* Extra-wide variant for two-up gallery (Part 2) */
+.gallery.gallery-wide img {
+  max-width: 420px;
+}
+
+@media (max-width: 640px) {
+  .gallery.gallery-wide img {
+    max-width: 45vw;
+  }
+}
+
+/* Slightly smaller display for the dolly zoom GIF */
+img.dollyzoom {
+  max-width: 600px;
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}

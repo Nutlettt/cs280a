@@ -67,26 +67,31 @@ if (btn) {
 
 // Sidebar toggle
 const sidebar = document.getElementById('sidebar');
-const toggleBtn = document.getElementById('sidebar-toggle');
-const expandBtn = document.getElementById('sidebar-expand');
+const toggleBtn = document.getElementById('sidebar-toggle'); // now in top navbar
+const overlay = document.getElementById('sidebar-overlay');
 
 function updateSidebarButton() {
+  // Only need to manage overlay pointer events now
+  if (!overlay) return;
   if (sidebar.classList.contains('collapsed')) {
-    expandBtn.style.display = 'block';
+    overlay.style.pointerEvents = 'none';
   } else {
-    expandBtn.style.display = 'none';
+    overlay.style.pointerEvents = 'auto';
   }
 }
 
-if (sidebar && toggleBtn && expandBtn) {
+if (sidebar && toggleBtn) {
   toggleBtn.addEventListener('click', () => {
     sidebar.classList.toggle('collapsed');
     updateSidebarButton();
   });
-  expandBtn.addEventListener('click', () => {
-    sidebar.classList.remove('collapsed');
-    updateSidebarButton();
-  });
-  // Initialize button visibility
+  if (overlay) {
+    overlay.addEventListener('click', () => {
+      sidebar.classList.add('collapsed');
+      updateSidebarButton();
+    });
+  }
+  // Ensure collapsed by default on load and initialize button/overlay
+  sidebar.classList.add('collapsed');
   updateSidebarButton();
 }

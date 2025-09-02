@@ -5,34 +5,35 @@
   <title>Project 0 | CS280A — ZHOU Guanren</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="proj_0.css">
 </head>
 <body>
 
   <!-- Top Navbar -->
   <nav class="top-navbar">
     <div class="navbar-left">
-      <a class="breadcrumb" href="../index.html">← CS280A</a>
-      <span class="breadcrumb">/ Project 0</span>
+  <a class="breadcrumb" href="../index.html">CS280A</a>
+  <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb" aria-current="page">Project 0</span>
     </div>
     <div class="navbar-right">
-      <button id="theme-toggle" aria-label="Toggle color theme">🌓 Light/Dark Mode</button>
+  <button id="sidebar-toggle" class="top-icon-btn" aria-label="Toggle sidebar" title="Toggle sidebar">☰</button>
+  <button id="theme-toggle" class="top-icon-btn" aria-label="Toggle color theme" title="Toggle color theme">🌓</button>
     </div>
   </nav>
 
   <!-- Left Sidebar -->
-  <aside id="sidebar" class="sidebar">
-    <button id="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
+  <aside id="sidebar" class="sidebar collapsed">
     <nav>
       <ul>
         <li><a href="#part1">Part 1</a></li>
         <li><a href="#part2">Part 2</a></li>
         <li><a href="#part3">Part 3</a></li>
-        <li><a href="#discussion">Discussion</a></li>
       </ul>
     </nav>
   </aside>
-  <!-- sidebar  -->
-  <button id="sidebar-expand" aria-label="Expand sidebar" style="display:none; position:fixed; top:70px; left:10px; z-index:101; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:4px 8px; cursor:pointer;">▶</button>
+  <!-- overlay for sidebar -->
+  <div class="overlay" id="sidebar-overlay" aria-hidden="true"></div>
 
   <!-- Content -->
   <main class="with-sidebar">
@@ -42,7 +43,7 @@
         <p>This project is ...</p>
       </header>
       <h2>Part 1 — Focal Length Selfie Comparison</h2>
-      <div class="gallery">
+  <div class="gallery gallery-large">
         <div>
           <img class="responsive" src="media/selfie_14mm.jpeg" alt="Selfie 14mm">
           <p style="text-align:center; color:var(--text-muted); margin-top:6px;">14mm</p>
@@ -69,30 +70,36 @@
 
     <!-- Part 2 -->
     <section id="part2" class="card">
-      <h2>Part 2 — Title Placeholder</h2>
-      <p>[Content goes here]</p>
+      <h2>Part 2 — Street Scene Comparison</h2>
+  <div class="gallery gallery-wide">
+        <div>
+          <img class="responsive" src="media/street_far_145mm.jpeg" alt="Street scene 145mm (far)">
+          <p style="text-align:center; color:var(--text-muted); margin-top:6px;">145mm (far)</p>
+        </div>
+        <div>
+          <img class="responsive" src="media/street_close_24mm.jpeg" alt="Street scene 24mm">
+          <p style="text-align:center; color:var(--text-muted); margin-top:6px;">24mm</p>
+        </div>
+      </div>
     </section>
     <hr>
 
     <!-- Part 3 -->
     <section id="part3" class="card">
-      <h2>Part 3 — Title Placeholder</h2>
-      <p>[Content goes here]</p>
+      <h2>Part 3 — Dolly Zoom</h2>
+  <img class="responsive dollyzoom" src="media/dollyzoom.gif" alt="Dolly zoom animation">
+      <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Dolly zoom GIF</p>
     </section>
     <hr>
 
-    <!-- Discussion -->
-    <section id="discussion" class="card">
-      <h2>Discussion</h2>
-      <p>[Content goes here]</p>
-    </section>
-  </main>
-
-  <!-- Footer -->
+  <!-- footer -->
   <footer>
     <p>© 2025 ZHOU Guanren |
       <a href="mailto:guanren_zhou@berkeley.edu">📧 Email</a> |
-      <a href="https://github.com/Nutlettt" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/Nutlettt" target="_blank" rel="noopener noreferrer"> 
+        <img src="../media/github.png" alt="GitHub" style="width: 16px; height: 16px;"> GitHub</a> |
+      <a href="https://stairlab.berkeley.edu/people/guanren-zhou/" target="_blank" rel="noopener noreferrer">
+        <img src="../media/stairlab.svg" alt="STAIR Lab" style="width: 16px; height: 16px;"> STAIR Lab</a>
     </p>
   </footer>
 
