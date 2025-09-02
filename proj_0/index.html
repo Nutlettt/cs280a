@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Project 0 | CS280A — ZHOU Guanren</title>
+  <title>Project 0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="proj_0.css">
@@ -40,10 +40,16 @@
     <div class="main-center">
       <header>
         <h1>Project 0: Becoming Friends with Your Camera</h1>
-        <p>This project is ...</p>
+        <h4>Exploring the subtle relationship between perspective, focal length/zoom, and the center of projection.
+        </h4>
+        <p>Photos taken during my journey in LA (beautiful but too hot 🫠).</p>
       </header>
-      <h2>Part 1 — Focal Length Selfie Comparison</h2>
-  <div class="gallery gallery-large">
+
+    <!-- Part 1 -->
+  <section id="part1">
+        <h2>Part 1: Selfie: The Wrong Way vs. The Right Way</h2>
+        <p><a href="https://www.google.com/maps?q=Santa+Monica" target="_blank" rel="noopener noreferrer">📌 Santa Monica Beach (with sunset) 🏖️</a></p>
+        <div class="gallery gallery-large">
         <div>
           <img class="responsive" src="media/selfie_14mm.jpeg" alt="Selfie 14mm">
           <p style="text-align:center; color:var(--text-muted); margin-top:6px;">14mm</p>
@@ -64,42 +70,65 @@
           <img class="responsive" src="media/selfie_120mm.jpeg" alt="Selfie 120mm">
           <p style="text-align:center; color:var(--text-muted); margin-top:6px;">120mm</p>
         </div>
-      </div>
-    </section>
+        </div>
+        <!-- Arrow explainer under Part 1 gallery -->
+        <div class="change-explainer">
+          <div class="change-caption">longer focal length + step back + zoom in</div>
+          <div class="arrow-row" role="img" aria-label="left to right">
+            <span class="label-left">Wrong</span>
+            <div class="arrow" aria-hidden="true"></div>
+            <span class="label-right">Right</span>
+          </div>
+        </div>
+        <!-- Discussion card for Part 1 -->
+        <div class="discussion-card">
+          <h3>Discussion</h3>
+          <p>TBD</p>
+        </div>
+      </section>
     <hr>
 
     <!-- Part 2 -->
-    <section id="part2" class="card">
-      <h2>Part 2 — Street Scene Comparison</h2>
+  <section id="part2">
+      <h2>Part 2: Architectural Perspective Compression</h2>
+      <p><a href="https://www.google.com/maps?q=Westfield+Century+City" target="_blank" rel="noopener noreferrer">📌 Westfield Century City 🛍️</a></p>
   <div class="gallery gallery-wide">
         <div>
           <img class="responsive" src="media/street_far_145mm.jpeg" alt="Street scene 145mm (far)">
-          <p style="text-align:center; color:var(--text-muted); margin-top:6px;">145mm (far)</p>
+          <p style="text-align:center; color:var(--text-muted); margin-top:6px;">145mm (far with zoom in)</p>
         </div>
         <div>
           <img class="responsive" src="media/street_close_24mm.jpeg" alt="Street scene 24mm">
-          <p style="text-align:center; color:var(--text-muted); margin-top:6px;">24mm</p>
+          <p style="text-align:center; color:var(--text-muted); margin-top:6px;">24mm (close without zoom)</p>
         </div>
+      </div>
+      <!-- Discussion card for Part 2 -->
+      <div class="discussion-card">
+        <h3>Discussion</h3>
+        <p>TBD</p>
       </div>
     </section>
     <hr>
 
     <!-- Part 3 -->
-    <section id="part3" class="card">
-      <h2>Part 3 — Dolly Zoom</h2>
+  <section id="part3">
+      <h2>Part 3: The Dolly Zoom</h2>
+      <p><a href="https://www.google.com/maps?q=Lush+Cosmetics+Century+City" target="_blank" rel="noopener noreferrer">📌 Lush Cosmetics</a> 🧼</p>
   <img class="responsive dollyzoom" src="media/dollyzoom.gif" alt="Dolly zoom animation">
-      <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Dolly zoom GIF</p>
+      <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Dolly Zoom of an alien trapped in soap</p>
+      <!-- Discussion card for Part 3 -->
+      <div class="discussion-card">
+        <h3>Discussion</h3>
+        <p>TBD</p>
+      </div>
     </section>
-    <hr>
 
   <!-- footer -->
   <footer>
     <p>© 2025 ZHOU Guanren |
       <a href="mailto:guanren_zhou@berkeley.edu">📧 Email</a> |
       <a href="https://github.com/Nutlettt" target="_blank" rel="noopener noreferrer"> 
-        <img src="../media/github.png" alt="GitHub" style="width: 16px; height: 16px;"> GitHub</a> |
-      <a href="https://stairlab.berkeley.edu/people/guanren-zhou/" target="_blank" rel="noopener noreferrer">
-        <img src="../media/stairlab.svg" alt="STAIR Lab" style="width: 16px; height: 16px;"> STAIR Lab</a>
+        <img src="../media/github.png" alt="GitHub" style="width: 16px; height: 16px;"> GitHub</a>
     </p>
   </footer>
 
