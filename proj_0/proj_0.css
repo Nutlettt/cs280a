@@ -74,8 +74,9 @@ img.dollyzoom {
 .discussion-card {
   margin-top: 14px;
   padding: 14px 16px;
-  background: var(--card-alt);
-  border: 2px solid var(--card-line);
+  background: var(--discussion-bg);
+  border: 1px solid var(--discussion-border);
+  border-left: 4px solid var(--discussion-accent); /* accent strip */
   border-radius: 10px;
   box-shadow: none;
   font-family: "Times New Roman", Times, serif;
@@ -83,6 +84,7 @@ img.dollyzoom {
 .discussion-card h3 {
   margin: 0 0 8px 0;
   font-weight: 700;
+  color: var(--discussion-accent);
   font-family: "Times New Roman", Times, serif;
 }
 .discussion-card p {
