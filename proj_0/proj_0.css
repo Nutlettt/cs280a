@@ -18,7 +18,7 @@
 
 /* Slightly smaller display for the dolly zoom GIF */
 img.dollyzoom {
-  max-width: 600px;
+  max-width: 450px;
   width: 100%;
   display: block;
   margin-left: auto;
@@ -76,7 +76,7 @@ img.dollyzoom {
   padding: 14px 16px;
   background: var(--discussion-bg);
   border: 1px solid var(--discussion-border);
-  border-left: 4px solid var(--discussion-accent); /* accent strip */
+  border-left: 4px solid var(--discussion-accent);
   border-radius: 10px;
   box-shadow: none;
   font-family: "Times New Roman", Times, serif;
@@ -91,4 +91,20 @@ img.dollyzoom {
   margin: 0;
   line-height: 1.7;
   font-size: 1rem;
+}
+
+/* LA trip 3x2 gallery */
+.trip-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.trip-gallery figure { margin: 0; }
+.trip-gallery img.responsive { width: 100%; height: auto; }
+
+@media (max-width: 820px) {
+  .trip-gallery { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .trip-gallery { grid-template-columns: 1fr; }
 }
