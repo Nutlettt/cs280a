@@ -66,23 +66,14 @@
       </header>
 
       <!-- Introduction -->
+      <div class="intro-image-row">
+      <img src="media/example/self_portrait_raw.jpg" alt="Original RGB Plate" class="intro-img-pair">
+      <img src="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg" alt="Aligned Color Result" class="intro-img-pair">
+      </div>
+
       <section id="introduction">
         <h2>Introduction</h2>
-        <div class="intro-flex">
-          <div class="intro-img">
-            <img src="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg" alt="Prokudin-Gorskii Self Portrait">
-            <div class="img-cap">Prokudin-Gorskii Self Portrait</div>
-          </div>
-          <div class="intro-text">
-            <p>
-              <a href="https://en.wikipedia.org/wiki/Sergey_Prokudin-Gorsky" target="_blank" rel="noopener noreferrer">Sergei Mikhailovich Prokudin-Gorskii</a> (1863-1944) was a chemist and photographer, best known as a pioneer of color photography. With special permission from the Tzar, he traveled across Russia and neighboring regions carrying a custom-designed camera. Due to the technical limitations of that era, each so-called “color photograph” was actually recorded as three separate negatives on a single specially shaped glass plate, each taken through a red, green, or blue filter. Fortunately, many of these high-quality negatives have been preserved and are now housed at the Library of Congress (LOC), which has digitized and publicly released them. As a result, we have the unique opportunity to glimpse the Russian Empire in color more than a century ago.
-            </p>
-          </div>
-          <div class="intro-img">
-            <img src="media/example/prokudin_plate.jpg" alt="Original RGB Plate">
-            <div class="img-cap">Original RGB Plate</div>
-          </div>
-        </div>
+        <p><a href="https://en.wikipedia.org/wiki/Sergey_Prokudin-Gorsky" target="_blank" rel="noopener noreferrer">Sergei Mikhailovich Prokudin-Gorskii</a> (1863-1944) was a chemist and photographer (his portrait above), best known as a pioneer of color photography. With special permission from the Tzar, he traveled across Russia and neighboring regions carrying a custom-designed camera. Due to the technical limitations of that era, each so-called “color photograph” was actually recorded as three separate negatives on a single specially shaped glass plate, each taken through a red, green, or blue filter. Fortunately, many of these high-quality negatives have been preserved and are now housed at the Library of Congress (LOC), which has digitized and publicly released them. As a result, we have the unique opportunity to glimpse the Russian Empire in color more than a century ago.</p>
         <p>In this project, we start from the digitized glass plates provided by the LOC, separate the three RGB channels, and align them to reconstruct plausible color images that Prokudin-Gorskii wanted to share. Different metrics and alignment algorithms are explored to achieve accurate and efficient alignment even for large high-resolution scans. In addition, a series of post-processing enhancement techniques, including automatic cropping, white balance, contrast adjustment, and color remapping, are applied to improve visual quality and produce more natural and historically faithful results.
         </p>
         <div class="discussion-card">
@@ -102,7 +93,7 @@
       <section id="small-jpg">
         <h2>Aligning Small JPG Images</h2>
         <h3>Metrics for Image Alignment</h3>
-        <p>Before aligning the images, one needs to define a metric to quantify "how well the images are aligned." This can be achieved through measuring the similarity between two images (patches). With a reference image $P$ and a target image $I$ (that we want to align with $P$), we define a region/patch $N$ that we want to align, then, our goal is to quantify how similar the region $N$ in $I$ is to $P$ after shifting $I$ by $(u,v)$. Two simple metrics are provided:</p>
+        <p> Before aligning the images, one needs to define a metric to quantify "how well the images are aligned." This can be achieved through measuring the similarity between two images (patches). With a reference image $P$ and a target image $I$ (that we want to align with $P$), we define a region/patch $N$ that we want to align, then, our goal is to quantify how similar the region $N$ in $I$ is to $P$ after shifting $I$ by $(u,v)$. Two simple metrics are provided:</p>
         <ul>
           <li><strong>Sum of Squared Differences (SSD) </strong>:the squared L2 norm between two images in the pixel/feature space,
             <div class="math-block">$$

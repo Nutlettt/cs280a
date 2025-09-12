@@ -534,3 +534,30 @@ a:hover, a:focus {
     max-width: 220px;
   }
 }
+
+.intro-image-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0px;
+  margin: 12px 0 12px 0;
+}
+.intro-img-pair {
+  height: 500px;
+  width: auto;
+  display: block;
+  border-radius: 0px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  object-fit: cover;
+}
+@media (max-width: 700px) {
+  .intro-image-row {
+    flex-direction: column;
+    gap: 18px;
+  }
+  .intro-img-pair {
+    height: auto;
+    width: 90vw;
+    max-width: 98vw;
+  }
+}
