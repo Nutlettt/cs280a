@@ -225,3 +225,254 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
   outline: 2px solid var(--discussion-accent);
   outline-offset: 2px;
 }
+
+/* Uniform square card grid (no crop, letterbox) */
+.multi-align-grid {
+  display: grid;
+  gap: 8px; /* 原 16px */
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  margin-top: 10px;
+}
+
+.multi-align-grid .card {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 6px 6px 4px; /* 更紧凑 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 2px 4px -2px rgba(0,0,0,.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .multi-align-grid .card {
+    background: #1e1e1e;
+    border-color: #333;
+  }
+}
+
+.multi-align-grid .img-frame {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid #e5e5e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .multi-align-grid .img-frame { background:#111; border-color:#222; }
+}
+
+.multi-align-grid .img-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #fff;
+  transition: transform .42s cubic-bezier(.22,.78,.23,.99), filter .42s ease;
+  cursor: zoom-in;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.multi-align-grid .img-frame:hover img.zoomable,
+.multi-align-grid .img-frame:focus-within img.zoomable {
+  transform: scale(1.08);
+  filter: saturate(1.05);
+}
+
+.multi-align-grid p {
+  margin-top: 4px;
+  font-size: 0.66rem;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+/* Override old gallery-wide sizing inside this grid */
+.multi-align-grid img.responsive {
+  max-width: 100% !important;
+}
+
+/* 键盘可聚焦 */
+.multi-align-grid .img-frame {
+  position: relative;
+}
+.multi-align-grid .img-frame button.lb-open-btn {
+  position:absolute;
+  inset:0;
+  background:transparent;
+  border:none;
+  padding:0;
+  cursor:zoom-in;
+  font-size:0;
+}
+
+/* --- Bells & Whistles uniform showcase grid --- */
+.bw-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  margin-top: 10px;
+}
+
+.bw-card {
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 6px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bw-card {
+    background: #1e1e1e;
+    border-color: #333;
+  }
+}
+
+.bw-frame {
+  width: 100%;
+  aspect-ratio: 4 / 3;             /* 调整比例即可：1/1 或 16/10 等 */
+  background: linear-gradient(135deg,#fafafa,#f0f0f0);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bw-frame {
+    background: linear-gradient(135deg,#181818,#232323);
+  }
+}
+
+.bw-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+  transition: transform .45s cubic-bezier(.22,.78,.23,.99), filter .45s ease;
+  cursor: zoom-in;
+  will-change: transform;
+}
+
+.bw-frame:hover img.zoomable,
+.bw-frame:focus-within img.zoomable {
+  transform: scale(1.06);
+  filter: saturate(1.05);
+}
+
+.bw-cap {
+  margin: 6px 0 0;
+  font-size: 0.7rem;
+  line-height: 1.15;
+  text-align: center;
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+@media (max-width: 560px) {
+  .bw-grid { grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); }
+}
+
+/* --- THEME AWARE CARD OVERRIDES (replace prefers-color-scheme logic) --- */
+:root,
+[data-theme="light"] {
+  --card-bg: #ffffff;
+  --card-border: #d9d9d9;
+  --frame-grad-a: #fafafa;
+  --frame-grad-b: #f0f0f0;
+  --cap-color: var(--text-muted, #555);
+}
+
+[data-theme="dark"] {
+  --card-bg: #1e1e1e;
+  --card-border: #333333;
+  --frame-grad-a: #181818;
+  --frame-grad-b: #232323;
+  --cap-color: var(--text-muted, #aaa);
+}
+
+/* Unified usage */
+.multi-align-grid .card,
+.bw-card {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+}
+
+.multi-align-grid .img-frame,
+.bw-frame {
+  background: linear-gradient(135deg,var(--frame-grad-a),var(--frame-grad-b)) !important;
+}
+
+.multi-align-grid p,
+.bw-cap {
+  color: var(--cap-color) !important;
+}
+
+/* If old dark media rules still present, we neutralize them by higher specificity; no need to delete immediately */
+
+/* === Overrides: remove dark square borders + no rounded corners === */
+
+/* 14 张图片的对齐结果（multi-align-grid）去掉外框与底色 */
+.multi-align-grid .img-frame {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 去掉图片自身（之前可能有 background:#fff）的底色，防止 letterbox 变黑 */
+.multi-align-grid .img-frame img {
+  background: transparent !important;
+}
+
+/* 如果 card 自身的白底边框也不要，可同时去掉；若想保留只注释这一段 */
+.multi-align-grid .card {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 4px 0 2px !important; /* 更紧凑，可按需调整 */
+}
+
+/* 统一去掉所有相关组件的圆角 */
+.gallery > div,
+.gallery figure,
+.multi-align-grid .card,
+.multi-align-grid .img-frame,
+.multi-align-grid img,
+.bw-card,
+.bw-frame,
+.bw-frame img,
+.lightbox img {
+  border-radius: 0 !important;
+}
+
+/* 若 Bells & Whistles 也想无边框 + 透明（可选） */
+.bw-card {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.bw-frame {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.bw-frame img {
+  background: transparent !important;
+}
+
+/* 确保文字颜色仍使用主题变量 */
+.multi-align-grid p,
+.bw-cap {
+  color: var(--cap-color) !important;
+}

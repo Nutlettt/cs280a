@@ -69,17 +69,17 @@
       <section id="introduction">
         <h2>Introduction</h2>
         <p>
-          <a href="https://en.wikipedia.org/wiki/Sergey_Prokudin-Gorsky" target="_blank" rel="noopener noreferrer">Sergei Mikhailovich Prokudin-Gorskii</a> (1863-1944) was a chemist and photographer best known as a pioneer of color photography. With special permission from the Tsar, he traveled across Russia and neighboring regions carrying a custom-designed camera. Due to the technical limitations of the early 20th century, each so-called “color photograph” was actually recorded as three separate negatives on a single specially shaped glass plate, each taken through a red, green, or blue filter. Fortunately, many of these high-quality negatives have been preserved and are now housed at the Library of Congress, which has digitized and publicly released them. As a result, we have the unique opportunity to glimpse the Russian Empire in color more than a century ago.
+          <a href="https://en.wikipedia.org/wiki/Sergey_Prokudin-Gorsky" target="_blank" rel="noopener noreferrer">Sergei Mikhailovich Prokudin-Gorskii</a> (1863-1944) was a chemist and photographer, best known as a pioneer of color photography. With special permission from the Tzar, he traveled across Russia and neighboring regions carrying a custom-designed camera. Due to the technical limitations of that era, each so-called “color photograph” was actually recorded as three separate negatives on a single specially shaped glass plate, each taken through a red, green, or blue filter. Fortunately, many of these high-quality negatives have been preserved and are now housed at the Library of Congress (LOC), which has digitized and publicly released them. As a result, we have the unique opportunity to glimpse the Russian Empire in color more than a century ago.
         </p>
-        <p>In this project, I start from the digitized glass plates provided by the LOC, separate the three RGB channels, and align them to reconstruct plausible color images. I explore different metrics and alignment algorithms to achieve accurate results even for large high-resolution scans in a reasonable runtime. In addition, I apply a series of post-processing enhancement techniques—including automatic cropping, white balance, contrast adjustment, and color mapping—to improve visual quality and produce more natural and historically faithful results.
+        <p>In this project, we start from the digitized glass plates provided by the LOC, separate the three RGB channels, and align them to reconstruct plausible color images that Prokudin-Gorskii wanted to share. Different metrics and alignment algorithms are explored to achieve accurate and efficient alignment even for large high-resolution scans. In addition, a series of post-processing enhancement techniques, including automatic cropping, white balance, contrast adjustment, and color remapping, are applied to improve visual quality and produce more natural and historically faithful results.
         </p>
         <div class="discussion-card">
           <h3>Highlights</h3>
           <ul>
             <li>Exhaustive search for small JPGs using NCC.</li>
-            <li>Image pyramid for large TIFs for efficient alignment.</li>
+            <li>Image pyramid for large TIFs for better efficiency.</li>
             <li>Robust alignment via Sobel gradient-domain NCC.</li>
-            <li>Automatic border cropping (edge density + k-fold), white balance (white patch assumption with enhancements), and contrast (CLAHE).</li>
+            <li>Automatic border cropping (edge density + k-fold), white balance (white patch assumption with tricks), and contrast (CLAHE).</li>
             <li>Optional Lab color transfer for historical aesthetics.</li>
           </ul>
         </div>
@@ -89,59 +89,64 @@
       <!-- Small JPG alignment -->
       <section id="small-jpg">
         <h2>Aligning Small JPG Images</h2>
-
         <h3>Metrics for Image Alignment</h3>
-        <p> Before aligning the images, one need to define a metric to quantify "how well the images are aligned." This can be achieved through measuring the similarity between two images (patches). With a reference image $P$ and a target image $I$ (that we want to align with $P$), we define a region/patch $N$ that we want to align, then, our goal is to quantify how similar the region $N$ in $I$ is to $P$ after shifting $I$ by $(u,v)$. Two simple metrics are provided in the lecture:</p>
+        <p> Before aligning the images, one needs to define a metric to quantify "how well the images are aligned." This can be achieved through measuring the similarity between two images (patches). With a reference image $P$ and a target image $I$ (that we want to align with $P$), we define a region/patch $N$ that we want to align, then, our goal is to quantify how similar the region $N$ in $I$ is to $P$ after shifting $I$ by $(u,v)$. Two simple metrics are provided:</p>
         <ul>
-          <li><strong>Euclidean Distance</strong> (square root dropped): the L2 norm between two images in the pixel/feature space,
+          <li><strong>Sum of Squared Differences (SSD) </strong>:the squared L2 norm between two images in the pixel/feature space,
             <div class="math-block">$$
             \operatorname{ssd}(u,v) = \sum_{(x,y)\in N} \left[I(u+x, v+y) - P(x,y)\right]^2
             $$</div>
           </li>
-          <li><strong><a href="https://xcdskd.readthedocs.io/en/latest/cross_correlation/cross_correlation_coefficient.html" target="_blank" rel="noopener noreferrer">Normalized Cross-Correlation (NCC)</a></strong>: the dot product between two images in the pixel/feature space.
+          <li><strong><a href="https://xcdskd.readthedocs.io/en/latest/cross_correlation/cross_correlation_coefficient.html" target="_blank" rel="noopener noreferrer">Normalized Cross-Correlation (NCC)</a></strong>: the dot product between two images in the pixel/feature space, i.e., the cosine similarity between two images after subtracting their mean and normalization
             <div class="math-block">$$
             \operatorname{ncc}(u,v) = 
             \frac{\sum_{(x,y)\in N}\left[I(u+x,v+y)-\bar I\right]\left[P(x,y)-\bar P\right]}
             {\sqrt{\sum_{(x,y)\in N}\left[I(u+x,v+y)-\bar I\right]^2}\sqrt{\sum_{(x,y)\in N}\left[P(x,y)-\bar P\right]^2}}
-            $$
-        </div>
+            $$</div>
           </li>
         </ul>
+        <p>With a glance at the definitions above, it is apparent that NCC should behave more robustly than SSD, since it is less sensitive to global shift (via subtracting the mean) and scaling (by normalization), which are both general issues in our case because Prokudin-Gorskii's 3 channels were not taken simultaneously with the same exposure. Therefore, for our implementation, let's start with NCC.</p>
 
-        <h3>Pre-processing</h3>
-        <p>Before applying the alignment algorithm, appropriate pre-processing are required for better performance and robustness. For instance, computing the metric on the internal pixels (patches) can avoid influences from the borders, which may significantly harm the metric calculation (e.g., ssd, ncc) when we do it on raw pixel value space while they heavily rely on pixel intensities. Therefore, here we use a central patch (e.g., 90%) for scoring.</p>
+        <h3>Pre-Processing: Patching</h3>
+        <p>Before applying the alignment algorithm, appropriate pre-processing is required to improve robustness. In particular, computing the similarity metric only on the central region of the image (e.g., the central 90%) helps to avoid boundary artifacts. Since metrics like SSD and NCC rely heavily on pixel intensities, including these border regions may significantly degrade their reliability. Therefore, we restrict the calculation to a central patch for more stable scoring.</p>
 
         <h3>Search Algorithm: Exhaustive Search</h3>
-        <p>With metric and searching space (in the raw pixel space or feature space) defined, the optimal alignment should be searched with an efficient algorithm from the possible shifts. As suggested from the project description, here I start with a simple exhaustive search.</p>
+        <p>With the similarity metric and the search space (either in the raw pixel space or a transformed feature space) defined, the optimal alignment can be obtained by searching over possible shifts. Here, we adopt a simple exhaustive search in the raw pixel space. The implementation details are as follows:</p>
+          <ol>
+            <li>Search grid: allow shifts within $[-15, 15]$ pixels around the center $(0, 0)$ in both $x$ and $y$ directions</li>
+            <li>Metric: use NCC, which is more robust than SSD as we discussed above.</li>
+            <li>Scoring region: restrict metric computation to a central crop, ignoring approximately $10\%$ of the margin to reduce border artifacts</li>
+            <li>Output: evaluate all candidate shifts in the grid and return the optimal $(dx, dy)$ for G and R relative to B</li>
+          </ol>
 
-        <div class="discussion-card">
-          <h3>Implementation details</h3>
-          <ul>
-            <li>Search window: $[-15, 15]$ around the center $(0, 0)$ in both x and y directions.</li>
-            <li>Metric: NCC (its normalization makes it robust to illumination changes than SSD.)</li>
-            <li>Scoring region: central crop (ignore ~10% margin)</li>
-            <li>Output: best (dx, dy) for G and R relative to B</li>
-          </ul>
-        </div>
-
-        <h3>Results</h3>
+        <h3>Results of Single-Scale Alignment (Exhaustive Search + NCC over Raw Pixel Space on Small JPG Images)</h3>
+        <p>The results are presented below, following the order such that the shift of R channel $(dx, dy)$, shift of G channel $(dx, dy)$, and run time.</p>
         <div class="gallery gallery-wide">
           <div>
-            <img class="responsive" src="media/output/small_raw/monastery/aligned_(0.89).jpg" alt="monastery (small jpg, exhaustive)">
+            <img class="responsive zoomable"
+                 src="media/output/small_raw/monastery/aligned_(2, 3)_(2, -3)_(0.84).jpg"
+                 data-full="media/output/small_raw/monastery/aligned_(2, 3)_(2, -3)_(0.84).jpg"
+                 alt="R(2,3) G(2,-3) 0.84s">
             <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              small_raw — monastery.jpg（exhaustive）
+              R(2, 3) G(2, -3) 0.84 sec
             </p>
           </div>
           <div>
-            <img class="responsive" src="media/output/small_raw/tobolsk/aligned_(0.90).jpg" alt="tobolsk (small jpg, exhaustive)">
+            <img class="responsive zoomable"
+                 src="media/output/small_raw/tobolsk/aligned_(3, 6)_(2, 3)_(0.87).jpg"
+                 data-full="media/output/small_raw/tobolsk/aligned_(3, 6)_(2, 3)_(0.87).jpg"
+                 alt="R(3,6) G(2,3) 0.87s">
             <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              small_raw — tobolsk.jpg（exhaustive）
+              R(3, 6) G(2, 3) 0.87 sec
             </p>
           </div>
           <div>
-            <img class="responsive" src="media/output/small_raw/cathedral/aligned_(0.90).jpg" alt="cathedral (small jpg, exhaustive)">
+            <img class="responsive zoomable"
+                 src="media/output/small_raw/cathedral/aligned_(3, 12)_(2, 5)_(0.83).jpg"
+                 data-full="media/output/small_raw/cathedral/aligned_(3, 12)_(2, 5)_(0.83).jpg"
+                 alt="R(3,12) G(2,5) 0.83s">
             <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              small_raw — cathedral.jpg（exhaustive）
+              R(3, 12) G(2, 5) 0.83 sec
             </p>
           </div>
         </div>
@@ -151,48 +156,145 @@
       <!-- Large TIF alignment -->
       <section id="large-tif">
         <h2>Aligning Large TIF Images</h2>
-
         <h3>Image Pyramid for Faster Alignment</h3>
-        <p>The exhaustive search algorithm works fine for small images with small searching space, however, its computational cost grows exponentially with the size of searching space and image. For instance, if we implement the exhaustive search through nested loops (without any parallelization), and use it to search for the optimal shift of the raw `.tif` image with a searching range of $[-50, 50]$ in x and y directions, it may take over 20 minutes to run!</p>
-        <p>Therefore, more efficient methods should be considered. Here I implement a coarse-to-fine alignment with <a href="https://en.wikipedia.org/wiki/Pyramid_(image_processing)">image pyramid</a>, where for each level, the exhaustive search is applied, but with a much smaller searching space.</p>
-        <p>More specifically, each level is obtained by downsampling the last level image (by a factor of 2 in my implementation). Blurring is necessary before downsampling at each level, aiming to avoid <a href="https://en.wikipedia.org/wiki/Aliasing">aliasing</a>. The alignment starts from the coarsest level and the optimal shift is propagated to the next finer level as the initial guess, until the finest level is reached. Therefore, except for the coarsest level, the searching space at each level is reduced to only $[-3, 3]$ in both x and y directions, which is much smaller than the original searching space of naive exhaustive search.</p>
+        <p>The exhaustive search algorithm works reasonably well for small images with limited search ranges. However, its computational cost grows dramatically with the search window and image resolution, which quickly becomes impractical. For instance, performing the exhaustive search over a shift range of $[-50, 50]$ pixels in both $x$ and $y$ directions on the raw TIF image (without parallelization) may take over 20 minutes!</p>
+        <p>Therefore, more efficient methods should be considered. Here we implement a coarse-to-fine alignment with <a href="https://en.wikipedia.org/wiki/Pyramid_(image_processing)">image pyramid</a>, where for each level, an exhaustive search is performed, but only within a much smaller local search window.</p>
+        <p>More specifically, each level is constructed by applying a blur followed by downsampling (by a factor of 2 in our implementation). Blurring is necessary before downsampling at each level, aiming to avoid <a href="https://en.wikipedia.org/wiki/Aliasing">aliasing</a>. The alignment starts from the coarsest level, and the optimal shift is propagated to the next finer level as the initial guess, until the finest level (the raw image) is reached. Therefore, except for the coarsest level, the searching space at each level is reduced significantly, which is much smaller than the original searching space of naive exhaustive search.</p>
+        <p><strong>Implementation details include:</strong></p>
+          <ol>
+            <li>Build pyramids through "blur + downsampling by 2" (via <a href="https://opencv.org/blog/resizing-and-rescaling-images-with-opencv/">cv2.resize</a> interpolated by <a href="https://medium.com/@wenrudong/what-is-opencvs-inter-area-actually-doing-282a626a09b3">INTER_AREA</a>), until minimum size (e.g., 300 px).</li>
+            <li>Start from the coarsest level with a wide search range (e.g., $[-20, 20]$) around the initial guess (e.g., the center $(0, 0)$), get the optimal shift.</li>
+            <li>At finer levels, use the last level's optimal shift (scaled by the downsampling factor, e.g., 2) as the initial guess, then search over a smaller range (e.g., $[-3, 3]$) around it for the new optimal shift.</li>
+            <li>Repeat step 3 until the finest level is reached, i.e., the raw image.</li>
+          </ol>
 
-        <div class="discussion-card">
-          <h3>Implementation details</h3>
-            <ul>
-            <li>Build pyramids by blur + downsampling by 2 (through <a href="https://opencv.org/blog/resizing-and-rescaling-images-with-opencv/">cv2.resize</a> interpolated by <a href="https://medium.com/@wenrudong/what-is-opencvs-inter-area-actually-doing-282a626a09b3">INTER_AREA</a>), until minimum size (e.g., 300 px).</li>
-            <li>Start at the coarsest level with a wide search range (e.g., $[-20, 20]$) around the center, get the optimal shift and scale to the next level.</li>
-            <li>At finer levels, search over a smaller grid (e.g., $[-3, 3]$) around the last level's optimal shift, get the optimal shift and scale to the next level.</li>
-            <li>Repeat the last step until we reach the finest level.</li>
-        </div>
-
-        <h3>Results</h3>
-        <div class="gallery gallery-wide">
-          <!-- Large TIF: pyramid on raw intensity -->
-          <!-- TODO: 如文件名不同，请改成你在 media/output/large_pyramid_row 下的文件名 -->
-          <div>
-            <img class="responsive" src="media/output/large_pyramid_raw/church/aligned_(17.32).jpg" alt="church (pyramid raw)">
-            <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              large_pyramid_row — church.tif → church.jpg
-            </p>
+        <h3>Results of Multi-Scale Alignment (Exhaustive Search + NCC over Raw Pixel Space on All Images)</h3>
+        <div class="multi-align-grid">
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/cathedral/aligned_(3, 12)_(2, 5)_(1.52).jpg"
+                   data-full="media/output/pyramid_raw/cathedral/aligned_(3, 12)_(2, 5)_(1.52).jpg"
+                   alt="R(3,12) G(2,5) 1.52s">
+            </div>
+            <p>R(3,12) G(2,5) 1.52s</p>
           </div>
-          <div>
-            <img class="responsive" src="media/output/large_pyramid_raw/melons/aligned_(17.75).jpg" alt="cathedral (pyramid raw)">
-            <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              large_pyramid_row — melons.tif → melons.jpg
-            </p>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/church/aligned_(-5, 58)_(-12, 24)_(16.01).jpg"
+                   data-full="media/output/pyramid_raw/church/aligned_(-5, 58)_(-12, 24)_(16.01).jpg"
+                   alt="R(-5,58) G(-12,24) 16.01s">
+            </div>
+            <p>R(-5,58) G(-12,24) 16.01s</p>
           </div>
-          <div>
-            <img class="responsive" src="media/output/large_pyramid_raw/self/aligned_(18.25).jpg" alt="self (pyramid raw)">
-            <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              large_pyramid_row — self.tif → self.jpg
-            </p>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/emir/aligned_(55, 104)_(24, 49)_(16.40).jpg"
+                   data-full="media/output/pyramid_raw/emir/aligned_(55, 104)_(24, 49)_(16.40).jpg"
+                   alt="R(55,104) G(24,49) 16.40s">
+            </div>
+            <p>R(55,104) G(24,49) 16.40s</p>
           </div>
-          <div>
-            <img class="responsive" src="media/output/large_pyramid_raw/three/aligned_(17.42).jpg" alt="three (pyramid raw)">
-            <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              large_pyramid_row — three.tif → three.jpg
-            </p>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/harvesters/aligned_(14, 124)_(16, 60)_(16.39).jpg"
+                   data-full="media/output/pyramid_raw/harvesters/aligned_(14, 124)_(16, 60)_(16.39).jpg"
+                   alt="R(14,124) G(16,60) 16.39s">
+            </div>
+            <p>R(14,124) G(16,60) 16.39s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/icon/aligned_(23, 89)_(17, 40)_(16.56).jpg"
+                   data-full="media/output/pyramid_raw/icon/aligned_(23, 89)_(17, 40)_(16.56).jpg"
+                   alt="R(23,89) G(17,40) 16.56s">
+            </div>
+            <p>R(23,89) G(17,40) 16.56s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/italil/aligned_(35, 77)_(21, 38)_(16.58).jpg"
+                   data-full="media/output/pyramid_raw/italil/aligned_(35, 77)_(21, 38)_(16.58).jpg"
+                   alt="R(35,77) G(21,38) 16.58s">
+            </div>
+            <p>R(35,77) G(21,38) 16.58s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/lastochikino/aligned_(-9, 76)_(-2, -3)_(16.83).jpg"
+                   data-full="media/output/pyramid_raw/lastochikino/aligned_(-9, 76)_(-2, -3)_(16.83).jpg"
+                   alt="R(-9,76) G(-2,-3) 16.83s">
+            </div>
+            <p>R(-9,76) G(-2,-3) 16.83s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/lugano/aligned_(-29, 92)_(-17, 41)_(16.63).jpg"
+                   data-full="media/output/pyramid_raw/lugano/aligned_(-29, 92)_(-17, 41)_(16.63).jpg"
+                   alt="R(-29,92) G(-17,41) 16.63s">
+            </div>
+            <p>R(-29,92) G(-17,41) 16.63s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/melons/aligned_(12, 178)_(10, 82)_(16.82).jpg"
+                   data-full="media/output/pyramid_raw/melons/aligned_(12, 178)_(10, 82)_(16.82).jpg"
+                   alt="R(12,178) G(10,82) 16.82s">
+            </div>
+            <p>R(12,178) G(10,82) 16.82s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/monastery/aligned_(2, 3)_(2, -3)_(1.51).jpg"
+                   data-full="media/output/pyramid_raw/monastery/aligned_(2, 3)_(2, -3)_(1.51).jpg"
+                   alt="R(2,3) G(2,-3) 1.51s">
+            </div>
+            <p>R(2,3) G(2,-3) 1.51s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/self/aligned_(34, 175)_(29, 79)_(17.10).jpg"
+                   data-full="media/output/pyramid_raw/self/aligned_(34, 175)_(29, 79)_(17.10).jpg"
+                   alt="R(34,175) G(29,79) 17.10s">
+            </div>
+            <p>R(34,175) G(29,79) 17.10s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/siren/aligned_(-25, 96)_(-7, 49)_(17.23).jpg"
+                   data-full="media/output/pyramid_raw/siren/aligned_(-25, 96)_(-7, 49)_(17.23).jpg"
+                   alt="R(-25,96) G(-7,49) 17.23s">
+            </div>
+            <p>R(-25,96) G(-7,49) 17.23s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/three/aligned_(10, 112)_(13, 55)_(16.54).jpg"
+                   data-full="media/output/pyramid_raw/three/aligned_(10, 112)_(13, 55)_(16.54).jpg"
+                   alt="R(10,112) G(13,55) 16.54s">
+            </div>
+            <p>R(10,112) G(13,55) 16.54s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_raw/tobolsk/aligned_(3, 6)_(2, 3)_(1.54).jpg"
+                   data-full="media/output/pyramid_raw/tobolsk/aligned_(3, 6)_(2, 3)_(1.54).jpg"
+                   alt="R(3,6) G(2,3) 1.54s">
+            </div>
+            <p>R(3,6) G(2,3) 1.54s</p>
           </div>
         </div>
       </section>
@@ -201,62 +303,252 @@
       <!-- Bells & Whistles -->
       <section id="bells-whistles">
         <h2>Bells &amp; Whistles</h2>
-        <h3>Analysis of Systematic Failures and Artifacts</h3>
-        <p>The aforementioned baseline uses NCC over raw pixel space at each pyramid level with exhaustive search, can already achieve reasonable alignment. However, the processed images still contain some artifacts that makes them less visually appealing and not perfectly aligned. For instance, systematic failures can be observed in some `.tif` images, like the `emir.tif`, where the red channel is obviously mis-aligned. Therefore, here we analyze and address those systematic failures and artifacts, and also apply some post-processing techniques to enhance the visual quality.</p>
+        <h3>Failure Mode Analysis</h3>
+        <p>The aforementioned baseline uses NCC over raw pixel space at each pyramid level with exhaustive search, can already achieve reasonable alignment. However, the processed images still contain some artifacts that makes them less visually appealing and not perfectly aligned. For instance, systematic failures can be observed in some TIF images, like the $\texttt{emir.tif}$, where the red channel is obviously mis-aligned (shown below). Therefore, here we analyze and address those systematic failures, and then apply some techniques to enhance the visual quality.</p>
 
         <section id="better-feature">
           <h3>Better Alignment: Robust Metric and/or Feature Space</h3>
           <p>While the NCC is foundamentally better than SSD due to its normalization, applying it directly on the raw pixel space still makes it highly sensitive to absolute intensities. This results in poor robustness against local defects and outliers (e.g., saturation, scratches, noise), and leads to systematic failures when the channels differ significantly in contrast and brightness.</p>
-          <p>In `emir.tif`, when we visualize the three channels separately, one can easily observe that the R channel exhibits a highly different contrast and saturation distribution compared to B and G channels. Consequently, NCC on raw intensities tends to systematically mis-align the red channel.</p>
+          <p>In $\texttt{emir.tif}$, when we visualize the three channels separately, one can easily observe that the R channel exhibits a highly different contrast and saturation distribution compared to B and G channels. Consequently, NCC on raw intensities tends to systematically mis-align the red channel.</p>
           <p>To address this, one can:</p>
           <ol>
             <li>either adopt a more robust metric, or</li>
-            <li>map the raw pixel space into feature spaces that are less affected by intensity variations.</li>
+            <li>map the raw pixel space into feature spaces that are less sensitive to intensity variations.</li>
           </ol>
-          <p>In my implementation, I adopt the latter strategy. Specifically, I compute NCC in the <a href="https://en.wikipedia.org/wiki/Sobel_operator">Sobel gradient space</a>, where the focus is shifted from pixel intensities to edges and structural information.</p>
-          <div class="gallery gallery-wide">
-            <!-- Before: pyramid on raw -->
-            <!-- After: pyramid on Sobel -->
-            <!-- TODO: 如文件名不同，请改成你在对应文件夹下的文件名 -->
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_raw/emir/aligned_(17.28).jpg" alt="emir (pyramid raw)">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Before — large_pyramid_row/emir.jpg</p>
+          <p>In my implementation, the latter strategy was adopted. Specifically, I compute NCC in the <a href="https://en.wikipedia.org/wiki/Sobel_operator">Sobel gradient space</a>, where the focus is shifted from pixel intensities to edges and structural information. And apparently, the misalignment issue was resolved appropriately.</p>
+        <h3>Results of Multi-Scale Alignment (Exhaustive Search + NCC over Sobel Gradient Space on All Images)</h3>
+        <div class="multi-align-grid">
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/cathedral/aligned_(3, 12)_(2, 5)_(1.52).jpg"
+                   data-full="media/output/pyramid_sobel/cathedral/aligned_(3, 12)_(2, 5)_(1.52).jpg"
+                   alt="R(3,12) G(2,5) 1.52s">
             </div>
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir/aligned_(17.96).jpg" alt="emir (pyramid sobel)">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">After — large_pyramid_sobel/emir.jpg</p>
-            </div>
+            <p>R(3,12) G(2,5) 1.52s</p>
           </div>
-        </section>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
+                   data-full="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
+                   alt="R(-4,58) G(4,25) 16.82s">
+            </div>
+            <p>R(-4,58) G(4,25) 16.82s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/emir/aligned_(40, 107)_(23, 49)_(16.77).jpg"
+                   data-full="media/output/pyramid_sobel/emir/aligned_(40, 107)_(23, 49)_(16.77).jpg"
+                   alt="R(40,107) G(23,49) 16.77s">
+            </div>
+            <p>R(40,107) G(23,49) 16.77s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/harvesters/aligned_(13, 123)_(17, 60)_(17.15).jpg"
+                   data-full="media/output/pyramid_sobel/harvesters/aligned_(13, 123)_(17, 60)_(17.15).jpg"
+                   alt="R(13,123) G(17,60) 17.15s">
+            </div>
+            <p>R(13,123) G(17,60) 17.15s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/icon/aligned_(23, 90)_(17, 42)_(17.62).jpg"
+                   data-full="media/output/pyramid_sobel/icon/aligned_(23, 90)_(17, 42)_(17.62).jpg"
+                   alt="R(23,90) G(17,42) 17.62s">
+            </div>
+            <p>R(23,90) G(17,42) 17.62s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/italil/aligned_(36, 77)_(22, 39)_(17.20).jpg"
+                   data-full="media/output/pyramid_sobel/italil/aligned_(36, 77)_(22, 39)_(17.20).jpg"
+                   alt="R(36,77) G(22,39) 17.20s">
+            </div>
+            <p>R(36,77) G(22,39) 17.20s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
+                   data-full="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
+                   alt="R(-8,76) G(-2,-3) 17.47s">
+            </div>
+            <p>R(-8,76) G(-2,-3) 17.47s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/lugano/aligned_(-29, 91)_(-17, 41)_(17.71).jpg"
+                   data-full="media/output/pyramid_sobel/lugano/aligned_(-29, 91)_(-17, 41)_(17.71).jpg"
+                   alt="R(-29,91) G(-17,41) 17.71s">
+            </div>
+            <p>R(-29,91) G(-17,41) 17.71s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
+                   data-full="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
+                   alt="R(12,177) G(10,80) 17.73s">
+            </div>
+            <p>R(12,177) G(10,80) 17.73s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/monastery/aligned_(2, 3)_(2, -3)_(1.50).jpg"
+                   data-full="media/output/pyramid_sobel/monastery/aligned_(2, 3)_(2, -3)_(1.50).jpg"
+                   alt="R(2,3) G(2,-3) 1.50s">
+            </div>
+            <p>R(2,3) G(2,-3) 1.50s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg"
+                   data-full="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg"
+                   alt="R(37,176) G(29,78) 17.84s">
+            </div>
+            <p>R(37,176) G(29,78) 17.84s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/siren/aligned_(-24, 96)_(-7, 49)_(17.68).jpg"
+                   data-full="media/output/pyramid_sobel/siren/aligned_(-24, 96)_(-7, 49)_(17.68).jpg"
+                   alt="R(-24,96) G(-7,49) 17.68s">
+            </div>
+            <p>R(-24,96) G(-7,49) 17.68s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/three/aligned_(8, 111)_(12, 54)_(16.80).jpg"
+                   data-full="media/output/pyramid_sobel/three/aligned_(8, 111)_(12, 54)_(16.80).jpg"
+                   alt="R(8,111) G(12,54) 16.80s">
+            </div>
+            <p>R(8,111) G(12,54) 16.80s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/tobolsk/aligned_(3, 6)_(2, 3)_(1.52).jpg"
+                   data-full="media/output/pyramid_sobel/tobolsk/aligned_(3, 6)_(2, 3)_(1.52).jpg"
+                   alt="R(3,6) G(2,3) 1.52s">
+            </div>
+            <p>R(3,6) G(2,3) 1.52s</p>
+          </div>
+        </div>
+      </section>
+      <hr>
 
         <section id="auto-cropping">
           <h3>Post-Processing: Automatic Cropping</h3>
-          <p>Once the alignment is done, the colored images often look real enough. However, they typically contain multiple artifacts that prevent them from being as good as photos taken by modern digital cameras. Therefore, we here we explore some post-processing techniques to enhance their visual quality.</p>
+          <p>Once the alignment is done, the colored images often look real enough. However, they typically contain artifacts that reduce their visual quality compared to modern digital photos. Therefore, we here we explore some post-processing techniques to enhance their visual quality.</p>
           <p>The most obvious artifact is the borders, which are typically single color and contain (almost) no information. To address this, here we can remove them through automatic cropping.</p>
-          <p>One method is to analyze the edges of the image. From observations, one can find that the borders usually single colored with minimal edges in the direction that they are perpendicular to. Therefore, with the assumption that the borders are approximately parallel to the image edges, we can detect them through "finding the significant changes in edge gradient" and crop them out. To achieve this, we can operate on the sobel gradient map with respect to x and y directions separately, details are as follows:</p>
+          <p>One method is to analyze the edges of the image. The borders are usually nearly uniform in color, with very few edges along the perpendicular direction. Therefore, with the assumption that "the borders are approximately parallel to the image edges", we can detect them through "finding the location where edge gradient changed dramatically" and crop them out. To improve robustness, we analyze the cumulative distribution of the absolute Sobel gradient values. To achieve this, we can operate on the sobel gradient map with respect to $x$ and $y$ directions separately, details are as follows:</p>
           <ol>
             <li>Convert the image to grayscale to keep only the intensity information</li>
-            <li>Compute the Sobel gradient maps along the x (horizontal derivative) and y (vertical derivative) directions, and take their absolute values</li>
-            <li>For each gradient map, project the values by summing along the perpendicular axis (e.g., sum columns for the x-gradient)</li>
-            <li>Compute the cumulative percentage of these projected values, and crop at the positions where the percentage first exceeds a predefined threshold</li>
-            <li>To avoid over-cropping the edges where the gradients are not significant (e.g, some clean background), the maximum cropping ratio should be limited.</li>
+            <li>Compute the Sobel gradient maps with respect to the $x$ and $y$ directions, and take their absolute values</li>
+            <li>For each gradient map, project the values by summing along the perpendicular axis (e.g., sum columns for the $x$-gradient)</li>
+            <li>Compute the cumulative percentage of these projected values, and crop at the positions where the percentage first exceeds a predefined threshold (e.g., $2\%$)</li>
+            <li>To avoid over-cropping the edges where the gradients are not significant (e.g, some clean background), the maximum cropping ratio should be limited by a threshold as well (e.g, $7\%$)</li>
           </ol>
-          <h4 style="margin-top:10px;">Failure Analysis & Improvement (k-fold)</h4>
-          <p>My first implementation of the automatic cropping works well for most images, however, some images, like `emir.tif`, contains writings on the borders (usually the meta information of the image), which are recognized as edges and affected the cropping. Since the initial cropping method is based on detecting the dramatic change of cumulative edge density, those writings on the border made the density increase rapidly to hit the threshold. However, simply increasing the threshold will cause the cropping to degenerate to "simple crop with a fixed ratio", since most other borders do not contain such writings and the maximum cropping will be simply controlled by the maximum cropping ratio.</p>
-          <p>Therefore, to address this issue, I cut the image into k folds along each direction, get the cropping range for each fold and adopt the most aggressive one for that direction. This is based on the observation that the writings typically appear on a specific region of one border, and the rest of borders are clean. Therefore, by analyzing k folds, we can assume that at least one fold does not affected by writings and can provide a good cropping range. This method works well for all the images I have tested.</p>
-          <div class="gallery gallery-wide">
-            <!-- TODO: 如文件名不同，请改成你在 large_pyramid_sobel 下的文件名 -->
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir/aligned_(17.96).jpg" alt="before crop (sobel aligned)">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Before cropping — large_pyramid_sobel/emir.jpg</p>
+          <h4 style="margin-top:10px;">Failure Analysis & Improvement (k-part strategy)</h4>
+          <p>The initial implementation of automatic cropping works well for most images; however, some images contain nose on the borders (e.g., writings that records meta information, rugged edges due to poor preservation), which can be recognized as edges as well. Since the initial cropping method is based on detecting the dramatic change of cumulative edge density, those writings on the border cause the density curve to rise quickly and trigger the threshold too early. However, simply increasing the threshold will cause the cropping to degenerate to "simple crop with a fixed ratio", since most other borders do not contain such writings, and the maximum cropping will be simply controlled by the maximum cropping ratio.</p>
+          <p>To address this, we can instead adopt a multi-region strategy: instead of applying the cropping detection to the entire image, we divide the image into k vertical (or horizontal) partitions, and perform the same border detection independently on each partition. This is based on the observation that the writings typically appear on a specific region of one border, and the rest of the borders are clean. Therefore, the assumption is that at least one partition will not be heavily influenced by writings or artifacts, and thus can provide a more reasonable cropping boundary. Finally, we take the most aggressive (largest) cropping among the partitions as the final result.</p>
+          <h4 style="margin-top:10px;">Results of Automatic Cropping (with & without k-part trick)</h4>
+          <p>Some selected results of automatic are demonstrated as follows. One can see that the initial implementation without the k-part trick can already crop the borders appropriately. However, for some cases, the borders cannot beeing cropped cleanly without over-cropping due to noise within borders. For instance, the example one is the case where its right black border contains writings of "5030" at upper part, and the second example shows rugged edges at right and red shades at bottom. After applying aforementioned k-part trick with $k=4$, one can find that the cropped images are cleaner.</p>
+          <div class="bw-grid">
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
+                     data-full="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
+                     alt="Before cropping (raw aligned)">
+              </div>
+              <p class="bw-cap">Before cropping</p>
             </div>
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir/aligned_cropped.jpg" alt="after crop (sobel aligned)">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">After cropping — large_pyramid_sobel/emir_cropped.jpg</p>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/church/aligned_cropped(k=1).png"
+                     data-full="media/output/pyramid_sobel/church/aligned_cropped(k=1).png"
+                     alt="Cropped without k-part trick">
+              </div>
+              <p class="bw-cap">Cropped w/o k-part trick</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/church/aligned_cropped.jpg"
+                     data-full="media/output/pyramid_sobel/church/aligned_cropped.jpg"
+                     alt="Cropped with k-part trick (k=4)">
+              </div>
+              <p class="bw-cap">Cropped w/ k-part trick (k=4)</p>
+            </div>
+          </div>
+
+                    <div class="bw-grid">
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
+                     data-full="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
+                     alt="Before cropping (raw aligned)">
+              </div>
+              <p class="bw-cap">Before cropping</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/lastochikino/aligned_cropped(k=1).png"
+                     data-full="media/output/pyramid_sobel/lastochikino/aligned_cropped(k=1).png"
+                     alt="Cropped without k-part trick">
+              </div>
+              <p class="bw-cap">Cropped w/o k-part trick</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/lastochikino/aligned_cropped.jpg"
+                     data-full="media/output/pyramid_sobel/lastochikino/aligned_cropped.jpg"
+                     alt="Cropped with k-part trick (k=4)">
+              </div>
+              <p class="bw-cap">Cropped w/ k-part trick (k=4)</p>
             </div>
           </div>
         </section>
-
+        <h4 style="margin-top:10px;">Trade-Off Analysis</h4>
+        <p>However, there is still a trade-off. After observing the aligned images, one would ask: "How do we define the so-called borders?" Are they just single colored straight bands? Or we should also consider the edge regions that are mainly shaded by single colors while also containing semantic information? Cutting the latter out or adjusting them back to their natural color was a trade-off that took me a long time to consider. The following $melons$ is a good example, it contains a large region of multiple single-colored shaded bands on the top, which apparently is the top of the building behind the fruit farmer; however, if we consider them are borders, they are all cut off and we lose all the information! The ideal way to handle them should be mapping them back to natural colors; however, this seems too hard to automate. Therefore, in my final implementation, I tuned the thresholds to make the cropping not too aggressive, then, we can still keep some of those regions to keep the information inside, even though they may look ugly.</p>
+                  <div class="bw-grid">
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
+                     alt="Before cropping (raw aligned)">
+              </div>
+              <p class="bw-cap">Before cropping</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
+                     alt="Cropped with k-part trick (k=4), keeping some edge regions">
+              </div>
+              <p class="bw-cap">Cropped w/ k-part trick (k=4), keeping some edge regions (top)</p>
+            </div>
+          </div>
+        <hr>
+        
         <section id="auto-wb">
           <h3>Post-Processing: Automatic White Balancing</h3>
           <p>Limited by the technology Prokudin-Gorskii's time, the color of aligned images are typically not natural enough. To enhance the visual quality, here we manipulate the pixel intensities and distributions as post-processing.</p>
@@ -278,15 +570,15 @@
           $$</div>
           <p>where $[R', G', B']^{\top}$ are the original RGB values before white balancing, $[R, G, B]^{\top}$ are the adjusted ones. The scaling factors $\alpha, \beta, \gamma$ can be determined based on the illuminant estimated from step 1.</p>
           <p>But one may want to ask, which algorithm should we implement for this project? Here we can analyze the photos we have, together with the properties of each algorithm. One common pattern we can observe Prokudin-Gorskii's photos is that most of them exhibit darkened edges, shadows, or aging artifacts, which bias the global average toward darker or desaturated tones. As a result, applying Gray World Assumption tends to introduce undesirable color shifts.</p>
-          <p>On the other hand, by analyzing the subject of Prokudin-Gorskii’s photographs, we can find that they are mainly landscapes, architecture and humanities, which typically contain some white objects. Therefore, trading off the two algorithms, implementing the White Patch Assumption is a better choice for this project.</p>
+          <p>On the other hand, by analyzing the subject of Prokudin-Gorskii's photographs, we can find that they are mainly landscapes, architecture and humanities, which typically contain some white objects. Therefore, trading off the two algorithms, implementing the White Patch Assumption is a better choice for this project.</p>
           <p>Recall that the White Patch Assumption calibrates the photo based on the brightest pixels in each channel, say, $R_{max}, G_{max}, B_{max}$, then the scaling factors can be determined as:</p>
           <div class="math-block">$$
-          \alpha=\frac{1}{R_{\max}},\ \beta=\frac{1}{G_{\max}},\ \gamma=\frac{1}{B_{\max}}
+          \alpha=\frac{1}{R_{\max}},\quad \beta=\frac{1}{G_{\max}},\quad \gamma=\frac{1}{B_{\max}}
           $$</div>
           <p>Simply applying White Patch Assumption on the brightest pixel of each channel may be sensitive to noise and extreme cases, e.g., some noise pixels are extremely bright, or some images contain saturated regions that are very bright in single channel, both of which can potentially harm the performance. To address this and enhance the robustness, my implementation involves two strategies:</p>
           <ol>
             <li>Only consider pixels whose channel values are similar (within a threshold $\delta$), which are more likely to be near-white/neutral rather than single-colored highlights.</li>
-            <li>Instead of using the pixel with the highest intensity, here we use the average of the `top_p` percentile pixels in each channel.</li>
+            <li>Instead of using the pixel with the highest intensity, here we use the average of the $\texttt{top_p}$ percentile pixels in each channel.</li>
           </ol>
           <p>With the constraints above, we now only consider the pixel $i$ that are bright (i.e., high intensity in grayscale $L_i$) but not dominated by a single channel, which are collected into:</p>
           <div class="math-block">$$
@@ -297,25 +589,54 @@
           \frac{|B_i-R_i|}{\max(B_i,R_i)}
           \right) \le \delta \right\}
           $$</div>
-          <p>where the $Q_p(L)$ is the brightness of the $\texttt{top\_p}$-th percentile in the grayscale $L$. Then, the $R_{max}, G_{max}, B_{max}$ are computed as the averages of the corresponding channels over the set $\Omega$:</p>
+          <p>where the $Q_p(L)$ is the brightness of the $\texttt{top_p}$-th percentile in the grayscale $L$. Then, the $R_{max}, G_{max}, B_{max}$ are computed as the averages of the corresponding channels over the set $\Omega$:</p>
           <div class="math-block">$$
           R_{\max}=\frac{1}{|\Omega|}\!\sum_{i\in\Omega} R_i,\quad
           G_{\max}=\frac{1}{|\Omega|}\!\sum_{i\in\Omega} G_i,\quad
           B_{\max}=\frac{1}{|\Omega|}\!\sum_{i\in\Omega} B_i
           $$</div>
 
-          <div class="gallery gallery-wide">
-            <!-- TODO: 修改为你的裁剪结果与白平衡结果的文件名 -->
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir/aligned_cropped.jpg" alt="before white balance">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Before WB — large_pyramid_sobel/emir/aligned_cropped.jpg</p>
+          <!-- White Balance before/after -->
+          <div class="bw-grid">
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
+                     alt="Before white balance">
+              </div>
+              <p class="bw-cap">Before WB</p>
             </div>
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir/aligned_cropped_wb.jpg" alt="after white balance">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">After WB — large_pyramid_sobel/emir/aligned_cropped_wb.jpg</p>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/melons/aligned_cropped_wb.jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb.jpg"
+                     alt="After white balance">
+              </div>
+              <p class="bw-cap">After WB</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/emir/aligned_cropped.jpg"
+                     data-full="media/output/pyramid_sobel/emir/aligned_cropped.jpg"
+                     alt="Before white balance">
+              </div>
+              <p class="bw-cap">Before WB</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/emir/aligned_cropped_wb.jpg"
+                     data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb.jpg"
+                     alt="After white balance">
+              </div>
+              <p class="bw-cap">After WB</p>
             </div>
           </div>
         </section>
+        <hr>
 
         <section id="auto-contrast">
           <h3>Post-Processing: Automatic Contrasting</h3>
@@ -343,30 +664,70 @@
           </ol>
           <p>With such issues in mind, the final implementation adopts the <a href="https://en.wikipedia.org/wiki/Adaptive_histogram_equalization#CLAHE">Contrast Limited Adaptive Histogram Equalization (CLAHE)</a>, which operates HE on small tile regions locally and combines the results via bilinear interpolation, addressing the first issue. To alleviate the second issue, HE on each tile is operated on a clipped and re-distributed histogram, yielding better local contrast enhancement without over-amplifying noise. The implementation is based on `skimage.exposure.equalize_adapthist`.</p>
 
-          <div class="gallery gallery-wide">
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir/aligned_cropped_wb.jpg" alt="before contrast (after WB)">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Before contrast — large_pyramid_sobel/emir/aligned_cropped_wb.jpg</p>
+          <!-- Contrast (CLAHE) -->
+          <div class="bw-grid">
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/melons/aligned_cropped_wb.jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
+                     alt="Before contrast (after WB)">
+              </div>
+              <p class="bw-cap">Before contrast</p>
             </div>
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir/aligned_cropped_wb_contrast.jpg" alt="after CLAHE">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">After CLAHE — large_pyramid_sobel/emir/aligned_cropped_wb_contrast.jpg</p>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/melons/aligned_cropped_wb_contrast.jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb_contrast.jpg"
+                     alt="After CLAHE">
+              </div>
+              <p class="bw-cap">After CLAHE</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/emir/aligned_cropped_wb.jpg"
+                     data-full="media/output/pyramid_sobel/emir/aligned_cropped.jpg"
+                     alt="Before contrast (after WB)">
+              </div>
+              <p class="bw-cap">Before contrast</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/emir/aligned_cropped_wb_contrast.jpg"
+                     data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb_contrast.jpg"
+                     alt="After CLAHE">
+              </div>
+              <p class="bw-cap">After CLAHE</p>
             </div>
           </div>
         </section>
+        <hr>
 
         <section id="better-colormap">
           <h3>Post-Processing: Better Color Mapping</h3>
           <p>TBD</p>
-          <div class="gallery">
-            <!-- TODO: 如有颜色迁移结果，请替换文件名 -->
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir_cropped_wb_contrast.jpg" alt="before color transfer">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Before color transfer — large_pyramid_sobel/emir_cropped_wb_contrast.jpg</p>
+          <!-- Color transfer (占位示例) -->
+          <div class="bw-grid">
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/large_pyramid_sobel/emir_cropped_wb_contrast.jpg"
+                     data-full="media/output/large_pyramid_sobel/emir_cropped_wb_contrast.jpg"
+                     alt="Before color transfer">
+              </div>
+              <p class="bw-cap">Before color transfer</p>
             </div>
-            <div>
-              <img class="responsive" src="media/output/large_pyramid_sobel/emir_color_transfer.jpg" alt="after color transfer">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">After color transfer — large_pyramid_sobel/emir_color_transfer.jpg</p>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/large_pyramid_sobel/emir_color_transfer.jpg"
+                     data-full="media/output/large_pyramid_sobel/emir_color_transfer.jpg"
+                     alt="After color transfer">
+              </div>
+              <p class="bw-cap">After color transfer</p>
             </div>
           </div>
         </section>
@@ -386,15 +747,79 @@
   </main>
 
   <!-- Lightbox (click-to-view original) -->
-  <div id="lightbox" class="lightbox" aria-hidden="true">
-    <div class="lb-backdrop" data-close="true"></div>
-    <div class="lb-inner" role="dialog" aria-modal="true">
-      <button class="lb-close" type="button" aria-label="Close (Esc)">×</button>
-      <img id="lightbox-image" alt="">
-      <div id="lightbox-caption" class="lb-caption"></div>
+  <div class="lightbox" id="pg-lightbox">
+    <div class="lb-backdrop"></div>
+    <div class="lb-inner">
+      <img id="lb-img" alt="">
+      <div class="lb-caption" id="lb-cap"></div>
+      <button class="lb-close" id="lb-close" aria-label="Close">&times;</button>
     </div>
   </div>
+  <script>
+  (function(){
+    /* ---- Sidebar toggle (原样) ---- */
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebarBtn = document.getElementById('sidebar-toggle');
+    function closeSidebar(){ sidebar.classList.add('collapsed'); overlay.classList.remove('open'); }
+    function toggleSidebar(){ const collapsed = sidebar.classList.toggle('collapsed'); overlay.classList.toggle('open', !collapsed); }
+    sidebarBtn && sidebarBtn.addEventListener('click', toggleSidebar);
+    overlay && overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSidebar(); });
 
-  <script src="../script.js" defer></script>
+    /* ---- Theme toggle (兼容多种写法) ---- */
+    const themeBtn = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+    function applyTheme(t){
+      // data-attr
+      root.setAttribute('data-theme', t);
+      document.body.setAttribute('data-theme', t);
+      // 常见类名全部同步一遍，适配你旧的 CSS
+      const darkOn = t === 'dark';
+      const classes = ['dark','dark-theme','theme-dark','mode-dark'];
+      classes.forEach(c=>{
+        root.classList.toggle(c, darkOn);
+        document.body.classList.toggle(c, darkOn);
+      });
+      // 也给 light 版本（部分样式用 .light）
+      const lightClasses = ['light','light-theme','theme-light','mode-light'];
+      lightClasses.forEach(c=>{
+        root.classList.toggle(c, !darkOn);
+        document.body.classList.toggle(c, !darkOn);
+      });
+      localStorage.setItem('theme', t);
+      if (themeBtn) themeBtn.title = 'Switch to ' + (darkOn ? 'light' : 'dark') + ' theme';
+    }
+    const stored = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(stored || (prefersDark ? 'dark' : 'light'));
+
+    themeBtn && themeBtn.addEventListener('click', ()=>{
+      const next = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+    });
+
+    // 跟随系统变化（可选）
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e=>{
+      if(!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
+    });
+
+    /* ---- Lightbox (原样) ---- */
+    const lb = document.getElementById('pg-lightbox');
+    if(lb){
+      const imgEl = document.getElementById('lb-img');
+      const capEl = document.getElementById('lb-cap');
+      const closeBtn = document.getElementById('lb-close');
+      function open(src, cap){ imgEl.src = src; capEl.textContent = cap || ''; lb.classList.add('open'); }
+      function close(){ lb.classList.remove('open'); imgEl.src=''; }
+      document.querySelectorAll('img.zoomable').forEach(im=>{
+        im.addEventListener('click', ()=> open(im.getAttribute('data-full')||im.src, im.alt));
+      });
+      lb.addEventListener('click', e=>{ if(e.target===lb || e.target.classList.contains('lb-backdrop')) close(); });
+      closeBtn && closeBtn.addEventListener('click', close);
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape' && lb.classList.contains('open')) close(); });
+    }
+  })();
+  </script>
 </body>
 </html>
