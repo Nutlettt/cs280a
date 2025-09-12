@@ -188,6 +188,19 @@ a:hover, a:focus {
   text-decoration: underline;
 }
 
+/* 让所有正文超链接在未悬停时也有弱提示，不显眼但可辨识 */
+main a, .main-center a, section a, p a, li a {
+  color: var(--link, #7aa2f7);
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  transition: color 0.2s, text-decoration-style 0.2s;
+}
+main a:hover, .main-center a:hover, section a:hover, p a:hover, li a:hover,
+main a:focus, .main-center a:focus, section a:focus, p a:focus, li a:focus {
+  color: var(--link-hover, #a7c7ff);
+  text-decoration: underline solid;
+}
+
 /* Focus styles */
 a:focus,
 button:focus {

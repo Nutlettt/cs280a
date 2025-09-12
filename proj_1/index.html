@@ -68,9 +68,21 @@
       <!-- Introduction -->
       <section id="introduction">
         <h2>Introduction</h2>
-        <p>
-          <a href="https://en.wikipedia.org/wiki/Sergey_Prokudin-Gorsky" target="_blank" rel="noopener noreferrer">Sergei Mikhailovich Prokudin-Gorskii</a> (1863-1944) was a chemist and photographer, best known as a pioneer of color photography. With special permission from the Tzar, he traveled across Russia and neighboring regions carrying a custom-designed camera. Due to the technical limitations of that era, each so-called “color photograph” was actually recorded as three separate negatives on a single specially shaped glass plate, each taken through a red, green, or blue filter. Fortunately, many of these high-quality negatives have been preserved and are now housed at the Library of Congress (LOC), which has digitized and publicly released them. As a result, we have the unique opportunity to glimpse the Russian Empire in color more than a century ago.
-        </p>
+        <div class="intro-flex">
+          <div class="intro-img">
+            <img src="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg" alt="Prokudin-Gorskii Self Portrait">
+            <div class="img-cap">Prokudin-Gorskii Self Portrait</div>
+          </div>
+          <div class="intro-text">
+            <p>
+              <a href="https://en.wikipedia.org/wiki/Sergey_Prokudin-Gorsky" target="_blank" rel="noopener noreferrer">Sergei Mikhailovich Prokudin-Gorskii</a> (1863-1944) was a chemist and photographer, best known as a pioneer of color photography. With special permission from the Tzar, he traveled across Russia and neighboring regions carrying a custom-designed camera. Due to the technical limitations of that era, each so-called “color photograph” was actually recorded as three separate negatives on a single specially shaped glass plate, each taken through a red, green, or blue filter. Fortunately, many of these high-quality negatives have been preserved and are now housed at the Library of Congress (LOC), which has digitized and publicly released them. As a result, we have the unique opportunity to glimpse the Russian Empire in color more than a century ago.
+            </p>
+          </div>
+          <div class="intro-img">
+            <img src="media/example/prokudin_plate.jpg" alt="Original RGB Plate">
+            <div class="img-cap">Original RGB Plate</div>
+          </div>
+        </div>
         <p>In this project, we start from the digitized glass plates provided by the LOC, separate the three RGB channels, and align them to reconstruct plausible color images that Prokudin-Gorskii wanted to share. Different metrics and alignment algorithms are explored to achieve accurate and efficient alignment even for large high-resolution scans. In addition, a series of post-processing enhancement techniques, including automatic cropping, white balance, contrast adjustment, and color remapping, are applied to improve visual quality and produce more natural and historically faithful results.
         </p>
         <div class="discussion-card">
@@ -79,7 +91,7 @@
             <li>Exhaustive search for small JPGs using NCC.</li>
             <li>Image pyramid for large TIFs for better efficiency.</li>
             <li>Robust alignment via Sobel gradient-domain NCC.</li>
-            <li>Automatic border cropping (edge density + k-fold), white balance (white patch assumption with tricks), and contrast (CLAHE).</li>
+            <li>Automatic border cropping (edge density + k-part trick), white balance (white patch assumption with tricks), and contrast (CLAHE).</li>
             <li>Optional Lab color transfer for historical aesthetics.</li>
           </ul>
         </div>
@@ -90,16 +102,16 @@
       <section id="small-jpg">
         <h2>Aligning Small JPG Images</h2>
         <h3>Metrics for Image Alignment</h3>
-        <p> Before aligning the images, one needs to define a metric to quantify "how well the images are aligned." This can be achieved through measuring the similarity between two images (patches). With a reference image $P$ and a target image $I$ (that we want to align with $P$), we define a region/patch $N$ that we want to align, then, our goal is to quantify how similar the region $N$ in $I$ is to $P$ after shifting $I$ by $(u,v)$. Two simple metrics are provided:</p>
+        <p>Before aligning the images, one needs to define a metric to quantify "how well the images are aligned." This can be achieved through measuring the similarity between two images (patches). With a reference image $P$ and a target image $I$ (that we want to align with $P$), we define a region/patch $N$ that we want to align, then, our goal is to quantify how similar the region $N$ in $I$ is to $P$ after shifting $I$ by $(u,v)$. Two simple metrics are provided:</p>
         <ul>
           <li><strong>Sum of Squared Differences (SSD) </strong>:the squared L2 norm between two images in the pixel/feature space,
             <div class="math-block">$$
-            \operatorname{ssd}(u,v) = \sum_{(x,y)\in N} \left[I(u+x, v+y) - P(x,y)\right]^2
+            \text{SSD}(u,v) = \sum_{(x,y)\in N} \left[I(u+x, v+y) - P(x,y)\right]^2
             $$</div>
           </li>
           <li><strong><a href="https://xcdskd.readthedocs.io/en/latest/cross_correlation/cross_correlation_coefficient.html" target="_blank" rel="noopener noreferrer">Normalized Cross-Correlation (NCC)</a></strong>: the dot product between two images in the pixel/feature space, i.e., the cosine similarity between two images after subtracting their mean and normalization
             <div class="math-block">$$
-            \operatorname{ncc}(u,v) = 
+            \text{NCC}(u,v) = 
             \frac{\sum_{(x,y)\in N}\left[I(u+x,v+y)-\bar I\right]\left[P(x,y)-\bar P\right]}
             {\sqrt{\sum_{(x,y)\in N}\left[I(u+x,v+y)-\bar I\right]^2}\sqrt{\sum_{(x,y)\in N}\left[P(x,y)-\bar P\right]^2}}
             $$</div>
@@ -108,7 +120,7 @@
         <p>With a glance at the definitions above, it is apparent that NCC should behave more robustly than SSD, since it is less sensitive to global shift (via subtracting the mean) and scaling (by normalization), which are both general issues in our case because Prokudin-Gorskii's 3 channels were not taken simultaneously with the same exposure. Therefore, for our implementation, let's start with NCC.</p>
 
         <h3>Pre-Processing: Patching</h3>
-        <p>Before applying the alignment algorithm, appropriate pre-processing is required to improve robustness. In particular, computing the similarity metric only on the central region of the image (e.g., the central 90%) helps to avoid boundary artifacts. Since metrics like SSD and NCC rely heavily on pixel intensities, including these border regions may significantly degrade their reliability. Therefore, we restrict the calculation to a central patch for more stable scoring.</p>
+        <p>Before applying the alignment algorithm, appropriate pre-processing is required to improve robustness. In particular, computing the similarity metric only on the central region of the image (e.g., the central $90\%$) helps to avoid boundary artifacts. Since metrics like SSD and NCC rely heavily on pixel intensities, including these border regions may significantly degrade their reliability. Therefore, we restrict the calculation to a central patch for more stable scoring.</p>
 
         <h3>Search Algorithm: Exhaustive Search</h3>
         <p>With the similarity metric and the search space (either in the raw pixel space or a transformed feature space) defined, the optimal alignment can be obtained by searching over possible shifts. Here, we adopt a simple exhaustive search in the raw pixel space. The implementation details are as follows:</p>
@@ -128,7 +140,7 @@
                  data-full="media/output/small_raw/monastery/aligned_(2, 3)_(2, -3)_(0.84).jpg"
                  alt="R(2,3) G(2,-3) 0.84s">
             <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              R(2, 3) G(2, -3) 0.84 sec
+              R(2, 3) G(2, -3) 0.84s
             </p>
           </div>
           <div>
@@ -137,7 +149,7 @@
                  data-full="media/output/small_raw/tobolsk/aligned_(3, 6)_(2, 3)_(0.87).jpg"
                  alt="R(3,6) G(2,3) 0.87s">
             <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              R(3, 6) G(2, 3) 0.87 sec
+              R(3, 6) G(2, 3) 0.87s
             </p>
           </div>
           <div>
@@ -146,7 +158,7 @@
                  data-full="media/output/small_raw/cathedral/aligned_(3, 12)_(2, 5)_(0.83).jpg"
                  alt="R(3,12) G(2,5) 0.83s">
             <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
-              R(3, 12) G(2, 5) 0.83 sec
+              R(3, 12) G(2, 5) 0.83s
             </p>
           </div>
         </div>
@@ -162,7 +174,7 @@
         <p>More specifically, each level is constructed by applying a blur followed by downsampling (by a factor of 2 in our implementation). Blurring is necessary before downsampling at each level, aiming to avoid <a href="https://en.wikipedia.org/wiki/Aliasing">aliasing</a>. The alignment starts from the coarsest level, and the optimal shift is propagated to the next finer level as the initial guess, until the finest level (the raw image) is reached. Therefore, except for the coarsest level, the searching space at each level is reduced significantly, which is much smaller than the original searching space of naive exhaustive search.</p>
         <p><strong>Implementation details include:</strong></p>
           <ol>
-            <li>Build pyramids through "blur + downsampling by 2" (via <a href="https://opencv.org/blog/resizing-and-rescaling-images-with-opencv/">cv2.resize</a> interpolated by <a href="https://medium.com/@wenrudong/what-is-opencvs-inter-area-actually-doing-282a626a09b3">INTER_AREA</a>), until minimum size (e.g., 300 px).</li>
+            <li>Build pyramids through "blur + downsampling by 2" (via <a href="https://opencv.org/blog/resizing-and-rescaling-images-with-opencv/">$\texttt{cv2.resize}$</a> interpolated by <a href="https://medium.com/@wenrudong/what-is-opencvs-inter-area-actually-doing-282a626a09b3">$\texttt{INTER_AREA}$</a>), until minimum size (e.g., 300 px).</li>
             <li>Start from the coarsest level with a wide search range (e.g., $[-20, 20]$) around the initial guess (e.g., the center $(0, 0)$), get the optimal shift.</li>
             <li>At finer levels, use the last level's optimal shift (scaled by the downsampling factor, e.g., 2) as the initial guess, then search over a smaller range (e.g., $[-3, 3]$) around it for the new optimal shift.</li>
             <li>Repeat step 3 until the finest level is reached, i.e., the raw image.</li>
@@ -305,11 +317,42 @@
         <h2>Bells &amp; Whistles</h2>
         <h3>Failure Mode Analysis</h3>
         <p>The aforementioned baseline uses NCC over raw pixel space at each pyramid level with exhaustive search, can already achieve reasonable alignment. However, the processed images still contain some artifacts that makes them less visually appealing and not perfectly aligned. For instance, systematic failures can be observed in some TIF images, like the $\texttt{emir.tif}$, where the red channel is obviously mis-aligned (shown below). Therefore, here we analyze and address those systematic failures, and then apply some techniques to enhance the visual quality.</p>
-
+        
+      <!-- Better Feature -->
         <section id="better-feature">
           <h3>Better Alignment: Robust Metric and/or Feature Space</h3>
           <p>While the NCC is foundamentally better than SSD due to its normalization, applying it directly on the raw pixel space still makes it highly sensitive to absolute intensities. This results in poor robustness against local defects and outliers (e.g., saturation, scratches, noise), and leads to systematic failures when the channels differ significantly in contrast and brightness.</p>
-          <p>In $\texttt{emir.tif}$, when we visualize the three channels separately, one can easily observe that the R channel exhibits a highly different contrast and saturation distribution compared to B and G channels. Consequently, NCC on raw intensities tends to systematically mis-align the red channel.</p>
+          <p>In $\texttt{emir.tif}$, when we visualize the three channels separately (see below), one can easily observe that the R channel exhibits a highly different contrast and saturation distribution compared to B and G channels. Consequently, NCC on raw intensities tends to systematically mis-align the red channel.</p>
+          <div class="bw-grid">
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/example/emir_r_channel_cmap.jpg"
+                     data-full="media/example/emir_r_channel_cmap.jpg"
+                     alt="R channel">
+              </div>
+              <p class="bw-cap">Red channel in red colormap</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/example/emir_g_channel_cmap.jpg"
+                     data-full="media/example/emir_g_channel_cmap.jpg"
+                     alt="G channel">
+              </div>
+              <p class="bw-cap">Green channel in green colormap</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/example/emir_b_channel_cmap.jpg"
+                     data-full="media/example/emir_b_channel_cmap.jpg"
+                     alt="B channel">
+              </div>
+              <p class="bw-cap">Blue channel in blue colormap</p>
+            </div>
+          </div>
+          
           <p>To address this, one can:</p>
           <ol>
             <li>either adopt a more robust metric, or</li>
@@ -448,6 +491,7 @@
       </section>
       <hr>
 
+      <!-- Auto Cropping -->
         <section id="auto-cropping">
           <h3>Post-Processing: Automatic Cropping</h3>
           <p>Once the alignment is done, the colored images often look real enough. However, they typically contain artifacts that reduce their visual quality compared to modern digital photos. Therefore, we here we explore some post-processing techniques to enhance their visual quality.</p>
@@ -549,16 +593,17 @@
           </div>
         <hr>
         
+        <!-- Auto White Balancing -->
         <section id="auto-wb">
           <h3>Post-Processing: Automatic White Balancing</h3>
-          <p>Limited by the technology Prokudin-Gorskii's time, the color of aligned images are typically not natural enough. To enhance the visual quality, here we manipulate the pixel intensities and distributions as post-processing.</p>
-          <p>From observations, it is common that the aligned colored photos exhibit <a href="https://en.wikipedia.org/wiki/Colour_cast">color casts</a>, i.e., the overall color shifts toward one color. Therefore, to make the colors more natural, here we correct the color through automatic <a href="https://en.wikipedia.org/wiki/Color_balance">white balancing</a>, where we identify and adjust the white points to be displayed as pure white. As like other color constancy algorithms, white balancing consists of two steps:</p>
+          <p>Limited by the technology of Prokudin-Gorskii's time, the colors of aligned images are typically not natural enough. To enhance the visual quality, here we manipulate the pixel intensities and distributions as post-processing.</p>
+          <p>From observations, it is common that the aligned colored photos exhibit <a href="https://en.wikipedia.org/wiki/Colour_cast">color casts</a>, i.e., the overall color shifts toward one color. Therefore, to make the colors more natural, here we correct the color through automatic <a href="https://en.wikipedia.org/wiki/Color_balance">white balancing</a>, where we identify and adjust the white points to be displayed as pure white. Like other color constancy algorithms, white balancing consists of two steps:</p>
           <ol>
             <li>Determining the illuminant under which an image was captured</li>
             <li>Adjusting the colors to counteract the illuminant and simulate a neutral illuminant</li>
           </ol>
-          <p>There are <a href="https://python.plainenglish.io/introduction-to-image-processing-with-python-bb39c83366a4">various algorithms</a> for automatic white balancing, where the most straightforward yet effective ones are the <a href="https://medium.com/@weichenpai/gray-world-assumption-in-computer-vision-0a6612c1420a">Gray World Assumption</a> and White Patch Assumption, the former assumes that the average reflectance in a scene is achromatic (gray), while the latter assumes that there exists at least one pixel in perfect white (equal RGB values), both of which serves as reference for step 1. Once we have the illuminant information from step 1, correcting the colors (step 2) is simply a linear transformation that scales the RGB channels accordingly.</p>
-          <o>The linear transformation for adjusting RGB channels can be expressed as a $3 \times 3$ matrix multiplication on the raw RGB values. With the assumption that the image was taken under an single illuminant, and the Prokudin-Gorskii's RGB filters were ideal such that 3 channels are uncoupled (similar to the <a href="https://en.wikipedia.org/wiki/Von_Kries_coefficient_law">Von Kries Coefficient Law</a> that human's cones are adjusted separately), then the transformation matrix can be simply diagonal with scaling factors of each channel:</o>
+          <p>There are <a href="https://python.plainenglish.io/introduction-to-image-processing-with-python-bb39c83366a4">various algorithms</a> for automatic white balancing, where the most straightforward yet effective ones are the <a href="https://medium.com/@weichenpai/gray-world-assumption-in-computer-vision-0a6612c1420a">Gray World Assumption</a> and White Patch Assumption. The former assumes that the average reflectance in a scene is achromatic (gray), while the latter assumes that there exists at least one pixel in perfect white (equal RGB values), both of which serves as reference for step 1. Once we have the illuminant information from step 1, correcting the colors (step 2) is simply a linear transformation that scales the RGB channels accordingly.</p>
+          <p>The linear transformation for adjusting RGB channels can be expressed as a $3 \times 3$ matrix multiplication on the raw RGB values. With the assumption that the image was taken under a single illuminant, and that Prokudin-Gorskii's RGB filters were ideal such that the RGB channels are uncoupled (similar to the <a href="https://en.wikipedia.org/wiki/Von_Kries_coefficient_law">Von Kries Coefficient Law</a> that human cones are adjusted separately), then the transformation matrix can be simplified to a diagonal form with per-channel scaling factors:</p>
           <div class="math-block">$$
           \begin{bmatrix} R \\[2pt] G \\[2pt] B \end{bmatrix} =
           \begin{bmatrix}
@@ -568,19 +613,19 @@
           \end{bmatrix}
           \begin{bmatrix} R' \\[2pt] G' \\[2pt] B' \end{bmatrix}
           $$</div>
-          <p>where $[R', G', B']^{\top}$ are the original RGB values before white balancing, $[R, G, B]^{\top}$ are the adjusted ones. The scaling factors $\alpha, \beta, \gamma$ can be determined based on the illuminant estimated from step 1.</p>
-          <p>But one may want to ask, which algorithm should we implement for this project? Here we can analyze the photos we have, together with the properties of each algorithm. One common pattern we can observe Prokudin-Gorskii's photos is that most of them exhibit darkened edges, shadows, or aging artifacts, which bias the global average toward darker or desaturated tones. As a result, applying Gray World Assumption tends to introduce undesirable color shifts.</p>
-          <p>On the other hand, by analyzing the subject of Prokudin-Gorskii's photographs, we can find that they are mainly landscapes, architecture and humanities, which typically contain some white objects. Therefore, trading off the two algorithms, implementing the White Patch Assumption is a better choice for this project.</p>
-          <p>Recall that the White Patch Assumption calibrates the photo based on the brightest pixels in each channel, say, $R_{max}, G_{max}, B_{max}$, then the scaling factors can be determined as:</p>
+          <p>where $[R', G', B']^{\top}$ are the original RGB values before white balancing, $[R, G, B]^{\top}$ are the adjusted ones. The scaling factors $\alpha, \beta, \gamma$ are determined based on the illuminant estimated from step 1.</p>
+          <p>But one may ask, which algorithm should we implement for this project? Here we can analyze the photos we have, together with the properties of each algorithm. One common pattern we can observe in Prokudin-Gorskii's collection is that most of them exhibit darkened edges, shadows, or aging artifacts, which bias the global average toward darker or desaturated tones. As a result, applying the Gray World Assumption tends to introduce undesirable color shifts.</p>
+          <p>On the other hand, by analyzing the subject matter of Prokudin-Gorskii's photographs, we can find that they are mainly landscapes, architecture and humanities, which typically contain some white objects. Therefore, trading off the two algorithms, implementing the White Patch Assumption is a better choice for this project.</p>
+          <p>Recall that the White Patch Assumption calibrates the photo based on the brightest pixels in each channel, say, $R_{\max}, G_{\max}, B_{\max}$, suppose our intensity range is defined as $[I_{\min}, I_{\max}]$, then the scaling factors can be naively determined as:</p>
           <div class="math-block">$$
-          \alpha=\frac{1}{R_{\max}},\quad \beta=\frac{1}{G_{\max}},\quad \gamma=\frac{1}{B_{\max}}
+          \alpha=\frac{I_{\max}}{R_{\max}},\quad \beta=\frac{I_{\max}}{G_{\max}},\quad \gamma=\frac{I_{\max}}{B_{\max}}
           $$</div>
-          <p>Simply applying White Patch Assumption on the brightest pixel of each channel may be sensitive to noise and extreme cases, e.g., some noise pixels are extremely bright, or some images contain saturated regions that are very bright in single channel, both of which can potentially harm the performance. To address this and enhance the robustness, my implementation involves two strategies:</p>
+          <p>However, simply applying the White Patch Assumption on the single brightest pixel of each channel may be sensitive to noise and extreme cases, e.g., some noise pixels are extremely bright, or some images contain saturated regions that are very bright in only one channel, both of which can potentially harm the performance. To address this and enhance the robustness, my implementation involves two strategies:</p>
           <ol>
-            <li>Only consider pixels whose channel values are similar (within a threshold $\delta$), which are more likely to be near-white/neutral rather than single-colored highlights.</li>
-            <li>Instead of using the pixel with the highest intensity, here we use the average of the $\texttt{top_p}$ percentile pixels in each channel.</li>
+            <li>Only consider pixels whose channel values are mutually similar (within a threshold $\delta$), which are more likely to be near-white/neutral rather than single-colored highlights.</li>
+            <li>Instead of using the single maximum, use the average over the $\texttt{top_p}\%$ brightest pixels (measured in grayscale luminance).</li>
           </ol>
-          <p>With the constraints above, we now only consider the pixel $i$ that are bright (i.e., high intensity in grayscale $L_i$) but not dominated by a single channel, which are collected into:</p>
+          <p>With the constraints above, we now only consider the pixel $i$ that are both bright (i.e., high grayscale intensity $L_i$) and approximately neutral in chromaticity, which are collected into the set:</p>
           <div class="math-block">$$
           \Omega = \left\{\, i \;\middle|\; L_i \ge Q_p(L),\;
           \max\!\left(
@@ -589,14 +634,17 @@
           \frac{|B_i-R_i|}{\max(B_i,R_i)}
           \right) \le \delta \right\}
           $$</div>
-          <p>where the $Q_p(L)$ is the brightness of the $\texttt{top_p}$-th percentile in the grayscale $L$. Then, the $R_{max}, G_{max}, B_{max}$ are computed as the averages of the corresponding channels over the set $\Omega$:</p>
+          <p>where $Q_p(L)$ is the threshold corresponding to the $\texttt{top_p}\%$ brightest pixels in the grayscale distribution (set to $\texttt{top_p}=2$ in my implementation, i.e., keep the top $2\%$ brightest pixels), and $\delta$ is the threshold that controls the chromaticity similarity (implemented to be $\delta=0.05$ in my case). Then, the $R_{\max}, G_{\max}, B_{\max}$ are computed as the averages of the corresponding channels over the set $\Omega$:</p>
           <div class="math-block">$$
           R_{\max}=\frac{1}{|\Omega|}\!\sum_{i\in\Omega} R_i,\quad
           G_{\max}=\frac{1}{|\Omega|}\!\sum_{i\in\Omega} G_i,\quad
           B_{\max}=\frac{1}{|\Omega|}\!\sum_{i\in\Omega} B_i
           $$</div>
+          <p>After scaling, pixels whose intensities exceed the range of $[I_{\min}, I_{\max}]$ are clipped to the nearest boundary.</p>
 
           <!-- White Balance before/after -->
+          <h4 style="margin-top:10px;">Results of Automatic White Balancing</h4>
+          <p>Some selected results are shown below. In my implementation, I aimed for a non-aggressive white balancing adjustment, so the $\texttt{top_p}$ and $\delta$ were set to $2$ and $0.05$, respectively. For example, the roof of the fruit farmer and the hat of the Emir were balanced to white appropriately, demonstrating that the method can effectively correct global color casts while preserving a natural appearance.</p>
           <div class="bw-grid">
             <div class="bw-card">
               <div class="bw-frame">
@@ -605,7 +653,7 @@
                      data-full="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
                      alt="Before white balance">
               </div>
-              <p class="bw-cap">Before WB</p>
+              <p class="bw-cap">After Cropping, before WB</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
@@ -616,6 +664,9 @@
               </div>
               <p class="bw-cap">After WB</p>
             </div>
+          </div>
+
+          <div class="bw-grid">
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
@@ -623,7 +674,7 @@
                      data-full="media/output/pyramid_sobel/emir/aligned_cropped.jpg"
                      alt="Before white balance">
               </div>
-              <p class="bw-cap">Before WB</p>
+              <p class="bw-cap">After Cropping, before WB</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
@@ -640,30 +691,37 @@
 
         <section id="auto-contrast">
           <h3>Post-Processing: Automatic Contrasting</h3>
-          <p>One common issue one can observe is that those photos are usually low-contrast, which means, the <a href="https://en.wikipedia.org/wiki/Image_histogram">image histograms</a> are not spanning the full intensity range, yielding the details in some regions less distinguishable. Therefore, here we enhance the contrast through manipulating the image histograms. </p>
-          <p>One simplest way is to map the histogram linearly to span the full intensity range, namely <a href="https://samirkhanal35.medium.com/contrast-stretching-f25e7c4e8e33">contrast stretching</a>. Say, for the grayscale space with the intensity range of $[I_{min}, I_{max}]$ and total number of gray levels $L$ (e.g., for uint8, $L=256$ and range is $[0,255]$), if we want to stretch an image, whose maximum and minimum intensities are $r_{max}$ and $r_{min}$, then the function mapping the original intensity $r$ to the new one $s$ (assuming $I_{min}=0$ and $I_{max}=L-1$) is defined as:</p>
+          <p>Another common issue in Prokudin-Gorskii's collection is low-contrast, which means, the <a href="https://en.wikipedia.org/wiki/Image_histogram">image histograms</a> are not spanning the full intensity range, yielding details in some regions less distinguishable. Therefore, subsequent contrast adjustment is necessary to make weak signals more visible, revealing details that were already present in the data but previously hidden in low-contrast regions. Here we enhance the contrast by manipulating the image histograms. </p>
+          <p>The simplest way is to map the histogram linearly to span the full intensity range, namely <a href="https://samirkhanal35.medium.com/contrast-stretching-f25e7c4e8e33">contrast stretching</a>. Say, for the grayscale space with the intensity range of $[I_{\min}, I_{\max}]$ and total number of gray levels $LI$ (e.g., for uint8, $LI=256$ and range is $[0,255]$), if we want to stretch an image, whose maximum and minimum intensities are $r_{\max}$ and $r_{\min}$, then the function mapping the original intensity $r$ to the new one $s$ (assuming $I_{\min}=0$ and $I_{\max}=LI-1$) is defined as:</p>
           <div class="math-block">$$
           s = \frac{r-r_{\min}}{r_{\max}-r_{\min}}(I_{\max}-I_{\min}) + I_{\min}
-          = \frac{r-r_{\min}}{r_{\max}-r_{\min}}(L-1)
+          = \frac{r-r_{\min}}{r_{\max}-r_{\min}}(LI-1)
           $$</div>
-          <p>However, one can observe that this method is sensitive to noise and outliers, since it relies on $r_{min}$ and $r_{max}$ heavily, hence, any noise/outliers that significantly off the main distribution will affect the result significantly. Moreover, such a linear mapping does not change the shape of histogram, therefore, cannot effectively enhance regions where pixel intensities are densely clustered (i.e., locally low-contrast regions due to over/under exposure).</p>
-          <p>A more robust way is the <a href="https://en.wikipedia.org/wiki/Histogram_equalization">histogram equalization (HE)</a>, which instead manipulates the cumulative distribution function (CDF) of the pixel intensities distribution. Again, starting from the image histogram, one can normalize it to get the probability distribution function (PDF) and then get the CDF through cumulative summation, which is basically the empirical CDF (ECDF) of the pixel intensities, which is defined as:</p>
+          <p>However, one can observe that this method is sensitive to noise and outliers, since it relies on $r_{\min}$ and $r_{\max}$ heavily, hence, any noise/outliers that deviate off the main distribution will affect the result significantly. Moreover, such a linear mapping does not change the shape of histogram, therefore, cannot effectively enhance regions where pixel intensities are densely clustered (i.e., locally low-contrast regions due to over/under exposure).</p>
+          <p>A more robust way is <a href="https://en.wikipedia.org/wiki/Histogram_equalization">histogram equalization (HE)</a>, which manipulates the cumulative distribution function (CDF) of the pixel intensities. Starting from the image histogram, one can normalize it to get the probability distribution function (PDF) and then get the CDF through cumulative summation, which is basically the empirical CDF (ECDF) of the pixel intensities, defined as:</p>
           <div class="math-block">$$
           \hat{F}_n(r) = \frac{1}{n}\sum_{i=1}^n \mathbf{1}(R_i \le r)
           $$</div>
-          <p>where $R_i$ is the intensity of pixel $i \in \{1,2,...,n\}$ that belongs to one of $n$ pixels of the image, $I(\cdot)$ is the indicator function.</p>
-          <p>Then, we can use ECDF to construct the mapping function from original intensity $r$ to new intensity $s$ that satisfies the requirement that $T: [I_{min}, I_{max}] \to [I_{min}, I_{max}]$, which is simply a scaled version of ECDF:</p>
+          <p>where $R_i$ is the intensity of pixel $i \in \{1,2,...,n\}$ that belongs to one of $n$ pixels of the image, and $\mathbf{1}(\cdot)$ is the indicator function.</p>
+          <p>Then, we can use ECDF to construct the mapping function from original intensity $r$ to new intensity $s$ that satisfies the requirement that $T: [I_{\min}, I_{\max}] \to [I_{\min}, I_{\max}]$, which is simply a scaled version of ECDF:</p>
           <div class="math-block">$$
-          s = T(r) = \hat{F}_n(r)(I_{\max}-I_{\min}) + I_{\min} = \hat{F}_n(r)(L-1)
+          s = T(r) = \hat{F}_n(r)(I_{\max}-I_{\min}) + I_{\min} = \hat{F}_n(r)(LI-1)
           $$</div>
-          <p>From the definition, one can observe that this method is less sensitive to outliers, and can re-distribute the pixel intensities more evenly, hence, able to address the aforementioned issues of contrast stretching.</p>
-          <p>However, there are still issues with implementing HE directly in our case:</p>
+          <p>From the definition, one can observe that this method is less sensitive to outliers, and can redistribute the pixel intensities more evenly, hence, able to address the aforementioned issues of contrast stretching.</p>
+          <p>However, it still has limitations in our case:</p>
           <ol>
-            <li>Both of above methods operate globally, however, the photos we have typically contain noise and defects in some local regions (e.g., uneven aging artifacts and unusual monochrome shades around the edges). Such local defects and noise will be incorporated into the new histogram and propagated to the whole image and affect the overall contrast enhancement.</li>
+            <li>Both of above methods operate globally, however, the photos we have typically contain noise and defects in some local regions (e.g., uneven aging artifacts and unusual monochrome shades around the edges). Such local defects and noise will be incorporated into the new histogram, propagated to the whole image, and affect the overall contrast enhancement.</li>
             <li>Since HE redistributes pixel intensities to approximate a uniform distribution, originally dense regions may be excessively spread out, while sparse regions are filled with additional pixels, sometimes introducing artificial contrast patterns or visual artifacts.</li>
           </ol>
-          <p>With such issues in mind, the final implementation adopts the <a href="https://en.wikipedia.org/wiki/Adaptive_histogram_equalization#CLAHE">Contrast Limited Adaptive Histogram Equalization (CLAHE)</a>, which operates HE on small tile regions locally and combines the results via bilinear interpolation, addressing the first issue. To alleviate the second issue, HE on each tile is operated on a clipped and re-distributed histogram, yielding better local contrast enhancement without over-amplifying noise. The implementation is based on `skimage.exposure.equalize_adapthist`.</p>
+          <p>With such issues in mind, the final implementation adopts the <a href="https://en.wikipedia.org/wiki/Adaptive_histogram_equalization#CLAHE">Contrast Limited Adaptive Histogram Equalization (CLAHE)</a>, which:</p> 
+          <ol>
+            <li>Operates HE on small tile regions locally and combines the results via bilinear interpolation, addressing the first issue.</li>
+            <li>To alleviate the second issue, HE on each tile is operated on a clipped and re-distributed histogram (through a parameter $\texttt{clip_limit}$), yielding better local contrast enhancement without over-amplifying noise.</li>
+          </ol>
+          <p>Luckily, skimage provides a well-implemented function for CLAHE, so I used <a href="https://scikit-image.org/docs/0.25.x/api/skimage.exposure.html#skimage.exposure.equalize_adapthist"> $\texttt{skimage.exposure.equalize_adapthist}$</a> for my final implementation.</p>
 
+          <h4 style="margin-top:10px;">Results of Automatic Contrasting</h4>
+          <p>Some selected results are shown below. Again, to avoid over-enhancement, I set the parameter $\texttt{clip_limit}$ to be a small value ($0.004$). One can see that after applying CLAHE, the details in some low-contrast regions are revealed, e.g., the texture of the fruit, and the details of Emir's beautiful cloth. </p>
           <!-- Contrast (CLAHE) -->
           <div class="bw-grid">
             <div class="bw-card">
@@ -673,7 +731,7 @@
                      data-full="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
                      alt="Before contrast (after WB)">
               </div>
-              <p class="bw-cap">Before contrast</p>
+              <p class="bw-cap">After Cropping + WB, before contrast</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
@@ -684,6 +742,9 @@
               </div>
               <p class="bw-cap">After CLAHE</p>
             </div>
+          </div>
+
+          <div class="bw-grid">
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
@@ -691,7 +752,7 @@
                      data-full="media/output/pyramid_sobel/emir/aligned_cropped.jpg"
                      alt="Before contrast (after WB)">
               </div>
-              <p class="bw-cap">Before contrast</p>
+              <p class="bw-cap">After Cropping + WB, before contrast</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
