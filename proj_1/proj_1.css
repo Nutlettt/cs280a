@@ -1,4 +1,4 @@
-/* Project 0 specific styles */
+/* Project 1 specific styles */
 
 /* Larger variant for selfie gallery (Part 1) */
 .gallery.gallery-large img {
@@ -229,7 +229,7 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
 /* Uniform square card grid (no crop, letterbox) */
 .multi-align-grid {
   display: grid;
-  gap: 8px; /* 原 16px */
+  gap: 8px;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   margin-top: 10px;
 }
@@ -238,7 +238,7 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
   background: #fff;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  padding: 6px 6px 4px; /* 更紧凑 */
+  padding: 6px 6px 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -299,7 +299,6 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
   max-width: 100% !important;
 }
 
-/* 键盘可聚焦 */
 .multi-align-grid .img-frame {
   position: relative;
 }
@@ -340,7 +339,7 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
 
 .bw-frame {
   width: 100%;
-  aspect-ratio: 4 / 3;             /* 调整比例即可：1/1 或 16/10 等 */
+  aspect-ratio: 4 / 3;
   background: linear-gradient(135deg,#fafafa,#f0f0f0);
   position: relative;
   overflow: hidden;
@@ -422,28 +421,23 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
 /* If old dark media rules still present, we neutralize them by higher specificity; no need to delete immediately */
 
 /* === Overrides: remove dark square borders + no rounded corners === */
-
-/* 14 张图片的对齐结果（multi-align-grid）去掉外框与底色 */
 .multi-align-grid .img-frame {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
-/* 去掉图片自身（之前可能有 background:#fff）的底色，防止 letterbox 变黑 */
 .multi-align-grid .img-frame img {
   background: transparent !important;
 }
 
-/* 如果 card 自身的白底边框也不要，可同时去掉；若想保留只注释这一段 */
 .multi-align-grid .card {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  padding: 4px 0 2px !important; /* 更紧凑，可按需调整 */
+  padding: 4px 0 2px !important;
 }
 
-/* 统一去掉所有相关组件的圆角 */
 .gallery > div,
 .gallery figure,
 .multi-align-grid .card,
@@ -456,7 +450,6 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
   border-radius: 0 !important;
 }
 
-/* 若 Bells & Whistles 也想无边框 + 透明（可选） */
 .bw-card {
   border: none !important;
   background: transparent !important;
@@ -471,13 +464,11 @@ mjx-container[jax="CHTML"] { line-height: 1.3; }
   background: transparent !important;
 }
 
-/* 确保文字颜色仍使用主题变量 */
 .multi-align-grid p,
 .bw-cap {
   color: var(--cap-color) !important;
 }
 
-/* 让所有超链接在未悬停时也有提示，但不太显眼 */
 a {
   color: var(--accent-muted, #3b82f6);
   text-decoration: underline dotted;
@@ -485,9 +476,8 @@ a {
   transition: color 0.2s, text-decoration-style 0.2s;
 }
 
-/* 悬停时更明显 */
 a:hover, a:focus {
-  color: var(--accent, #2563eb); /* 更深的蓝色 */
+  color: var(--accent, #2563eb);
   text-decoration: underline solid;
 }
 
@@ -518,7 +508,6 @@ a:hover, a:focus {
   align-self: center;
 }
 
-/* 响应式：在窄屏下改为纵向排列 */
 @media (max-width: 700px) {
   .intro-flex {
     flex-direction: column;

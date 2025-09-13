@@ -43,14 +43,14 @@
     <nav>
       <ul>
         <li><a href="#introduction">Introduction<span class="sidebar-sub">Project overview</span></a></li>
-        <li><a href="#small-jpg">Small JPG Alignment<span class="sidebar-sub">Exhaustive search</span></a></li>
-        <li><a href="#large-tif">Large TIF Alignment<span class="sidebar-sub">Image pyramid</span></a></li>
-        <li><a href="#bells-whistles">Bells &amp; Whistles<span class="sidebar-sub">Enhancements</span></a></li>
-        <li><a href="#better-feature">B&amp;W — Better Feature</a></li>
-        <li><a href="#auto-cropping">B&amp;W — Automatic Cropping</a></li>
-        <li><a href="#auto-wb">B&amp;W — Automatic White Balance</a></li>
-        <li><a href="#auto-contrast">B&amp;W — Automatic Contrast</a></li>
-        <li><a href="#better-colormap">B&amp;W — Better Color Map</a></li>
+        <li><a href="#small-jpg">Single-Scale Alignment<span class="sidebar-sub">Exhaustive search + NCC</span></a></li>
+        <li><a href="#large-tif">Multi-Scale Pyramid Alignment<span class="sidebar-sub">Image pyramid</span></a></li>
+        <li><a href="#bells-whistles">Bells &amp; Whistles<span class="sidebar-sub">Pre-/Post- Processing</span></a></li>
+        <li><a href="#better-feature">B&amp;W: Better Feature</a></li>
+        <li><a href="#auto-cropping">B&amp;W: Automatic Cropping</a></li>
+        <li><a href="#auto-wb">B&amp;W: Automatic WB</a></li>
+        <li><a href="#better-colormap">B&amp;W: Better Color Map</a></li>
+        <li><a href="#auto-contrast">B&amp;W: Automatic Contrast</a></li>
       </ul>
     </nav>
   </aside>
@@ -84,8 +84,8 @@
             <li>Robust alignment via Sobel gradient-domain NCC</li>
             <li>Automatic border cropping (edge density + k-part trick)</li>
             <li>Automatic white balance (white patch assumption with tricks)</li>
+            <li>Color remapping (linear mapping)</li>
             <li>Automatic contrast adjustment (CLAHE)</li>
-            <li>Color remapping</li>
           </ul>
         </div>
       </section>
@@ -685,7 +685,7 @@
           <hr>
           <section id="better-colormap">
             <h3>Post-Processing: Better Color Mapping</h3>
-            <p>There is no need to, and obviously should not, assume that Prokudin-Gorskii's RGB filters capture 3 channels correctly as modern cameras do. Therefore, there should be a map that corrects the systematic color cast caused by Prokudin-Gorskii's filters, which means, the diagonal matrix in white balancing is not sufficient, there should be some coupling effects between channels. Here I implement a naive linear color mapping, which is simply followed by the same method that we used for white balancing, i.e., a $3 \times 3$ matrix multiplication on the raw RGB values. However, instead of being diagonal, the transformation matrix is full now. This color remapping is applied after white balance in my pipeline, therefore, assuming that the white balanced images are already well balanced, so this color remapping should not affect neutral colors (grey or white), therefore, the transformation matrix is defined as:</p>
+            <p>There is no need, and indeed it would be incorrect, to assume that Prokudin-Gorskii's RGB filters captured the three channels as accurately as modern cameras do. Therefore, we require a mapping to correct the systematic color cast caused by these filters. This means that the diagonal matrix used in white balancing is not sufficient; there should also be coupling effects between channels. Here, I implement a simple linear color mapping, following the same approach as in white balancing, namely a $3 \times 3$ matrix multiplication on the raw RGB values. However, instead of being diagonal, the transformation matrix is now full. This color remapping is applied after white balance in my pipeline; thus, assuming that the white-balanced images are already neutral, the mapping should not affect neutral colors (gray or white). The transformation matrix is therefore defined as:</p>
             <div class="math-block">$$
             \begin{bmatrix}
             R \\ G \\ B
@@ -693,14 +693,13 @@
             \begin{bmatrix}
             1-a-b & a & b \\
             c & 1-c-d & d \\
-            e & f & 1-g-h
+            e & f & 1-e-f
             \end{bmatrix}
             \begin{bmatrix}
             R' \\ G' \\ B'
             \end{bmatrix}
             $$</div>
-            <p>Since we don't have a "ground truth" for optimizing the parameters, here I tune them manually based on some reference images, which is sort of subjective, but the results look better to me.</p>
-            <!-- Color remapping -->
+            <p>which ensures that each row sums to 1, so any input neutral color $[R=G=B]$ remains neutral after transformation. Since we don't have a "ground truth" for optimizing the parameters, here I tune the parameters manually based on reference photographs and visual inspection (e.g., correcting white walls, blue skies, and earthy tones). Although somewhat subjective, this method consistently improves the perceptual realism of the reconstructed images.</p>
             <h4 style="margin-top:10px;">Results of Automatic White Balancing</h4>
             <p>Some selected results are shown below. My final implemented parameters are: $a=-0.12$, $b=-0.15$, $c=0.30$, $d=-0.08$, $e=0.02$, $f=0.00$.</p>
             <div class="bw-grid">
@@ -1012,7 +1011,7 @@
   </div>
   <script>
   (function(){
-    /* ---- Sidebar toggle (原样) ---- */
+    /* ---- Sidebar toggle ---- */
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const sidebarBtn = document.getElementById('sidebar-toggle');
@@ -1022,21 +1021,21 @@
     overlay && overlay.addEventListener('click', closeSidebar);
     document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSidebar(); });
 
-    /* ---- Theme toggle (兼容多种写法) ---- */
+    /* ---- Theme toggle ---- */
     const themeBtn = document.getElementById('theme-toggle');
     const root = document.documentElement;
     function applyTheme(t){
       // data-attr
       root.setAttribute('data-theme', t);
       document.body.setAttribute('data-theme', t);
-      // 常见类名全部同步一遍，适配你旧的 CSS
+      // class
       const darkOn = t === 'dark';
       const classes = ['dark','dark-theme','theme-dark','mode-dark'];
       classes.forEach(c=>{
         root.classList.toggle(c, darkOn);
         document.body.classList.toggle(c, darkOn);
       });
-      // 也给 light 版本（部分样式用 .light）
+      // light class (opposite of dark)
       const lightClasses = ['light','light-theme','theme-light','mode-light'];
       lightClasses.forEach(c=>{
         root.classList.toggle(c, !darkOn);
@@ -1054,12 +1053,12 @@
       applyTheme(next);
     });
 
-    // 跟随系统变化（可选）
+    // auto-switch when system theme changes (if no manual override)
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e=>{
       if(!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light');
     });
 
-    /* ---- Lightbox (原样) ---- */
+    /* ---- Lightbox ---- */
     const lb = document.getElementById('pg-lightbox');
     if(lb){
       const imgEl = document.getElementById('lb-img');
