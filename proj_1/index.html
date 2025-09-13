@@ -68,7 +68,7 @@
       <!-- Introduction -->
       <div class="intro-image-row">
       <img src="media/example/self_portrait_raw.jpg" alt="Original RGB Plate" class="intro-img-pair">
-      <img src="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg" alt="Aligned Color Result" class="intro-img-pair">
+      <img src="media/output/pyramid_sobel/self/aligned_cropped_wb_map_contrast.jpg" alt="Aligned Color Result" class="intro-img-pair">
       </div>
 
       <section id="introduction">
@@ -79,11 +79,13 @@
         <div class="discussion-card">
           <h3>Highlights</h3>
           <ul>
-            <li>Exhaustive search for small JPGs using NCC.</li>
-            <li>Image pyramid for large TIFs for better efficiency.</li>
-            <li>Robust alignment via Sobel gradient-domain NCC.</li>
-            <li>Automatic border cropping (edge density + k-part trick), white balance (white patch assumption with tricks), and contrast (CLAHE).</li>
-            <li>Optional Lab color transfer for historical aesthetics.</li>
+            <li>Exhaustive search for small JPGs using NCC</li>
+            <li>Image pyramid for large TIFs for better efficiency</li>
+            <li>Robust alignment via Sobel gradient-domain NCC</li>
+            <li>Automatic border cropping (edge density + k-part trick)</li>
+            <li>Automatic white balance (white patch assumption with tricks)</li>
+            <li>Automatic contrast adjustment (CLAHE)</li>
+            <li>Color remapping</li>
           </ul>
         </div>
       </section>
@@ -355,119 +357,119 @@
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/cathedral/aligned_(3, 12)_(2, 5)_(1.52).jpg"
-                   data-full="media/output/pyramid_sobel/cathedral/aligned_(3, 12)_(2, 5)_(1.52).jpg"
-                   alt="R(3,12) G(2,5) 1.52s">
+                   src="media/output/pyramid_sobel/cathedral/aligned_(3, 12)_(2, 5)_(1.50).jpg"
+                   data-full="media/output/pyramid_sobel/cathedral/aligned_(3, 12)_(2, 5)_(1.50).jpg"
+                   alt="R(3,12) G(2,5) 1.50s">
             </div>
-            <p>R(3,12) G(2,5) 1.52s</p>
+            <p>R(3,12) G(2,5) 1.50s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
-                   data-full="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
-                   alt="R(-4,58) G(4,25) 16.82s">
+                   src="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.50).jpg"
+                   data-full="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.50).jpg"
+                   alt="R(-4,58) G(4,25) 16.50s">
             </div>
-            <p>R(-4,58) G(4,25) 16.82s</p>
+            <p>R(-4,58) G(4,25) 16.50s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/emir/aligned_(40, 107)_(23, 49)_(16.77).jpg"
-                   data-full="media/output/pyramid_sobel/emir/aligned_(40, 107)_(23, 49)_(16.77).jpg"
-                   alt="R(40,107) G(23,49) 16.77s">
+                   src="media/output/pyramid_sobel/emir/aligned_(40, 107)_(23, 49)_(16.92).jpg"
+                   data-full="media/output/pyramid_sobel/emir/aligned_(40, 107)_(23, 49)_(16.92).jpg"
+                   alt="R(40,107) G(23,49) 16.92s">
             </div>
-            <p>R(40,107) G(23,49) 16.77s</p>
+            <p>R(40,107) G(23,49) 16.92s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/harvesters/aligned_(13, 123)_(17, 60)_(17.15).jpg"
-                   data-full="media/output/pyramid_sobel/harvesters/aligned_(13, 123)_(17, 60)_(17.15).jpg"
-                   alt="R(13,123) G(17,60) 17.15s">
+                   src="media/output/pyramid_sobel/harvesters/aligned_(13, 123)_(17, 60)_(18.67).jpg"
+                   data-full="media/output/pyramid_sobel/harvesters/aligned_(13, 123)_(17, 60)_(18.67).jpg"
+                   alt="R(13,123) G(17,60) 18.67s">
             </div>
-            <p>R(13,123) G(17,60) 17.15s</p>
+            <p>R(13,123) G(17,60) 18.67s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/icon/aligned_(23, 90)_(17, 42)_(17.62).jpg"
-                   data-full="media/output/pyramid_sobel/icon/aligned_(23, 90)_(17, 42)_(17.62).jpg"
-                   alt="R(23,90) G(17,42) 17.62s">
+                   src="media/output/pyramid_sobel/icon/aligned_(23, 90)_(17, 42)_(17.76).jpg"
+                   data-full="media/output/pyramid_sobel/icon/aligned_(23, 90)_(17, 42)_(17.76).jpg"
+                   alt="R(23,90) G(17,42) 17.76s">
             </div>
-            <p>R(23,90) G(17,42) 17.62s</p>
+            <p>R(23,90) G(17,42) 17.76s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/italil/aligned_(36, 77)_(22, 39)_(17.20).jpg"
-                   data-full="media/output/pyramid_sobel/italil/aligned_(36, 77)_(22, 39)_(17.20).jpg"
-                   alt="R(36,77) G(22,39) 17.20s">
+                   src="media/output/pyramid_sobel/italil/aligned_(36, 77)_(22, 39)_(16.91).jpg"
+                   data-full="media/output/pyramid_sobel/italil/aligned_(36, 77)_(22, 39)_(16.91).jpg"
+                   alt="R(36,77) G(22,39) 16.91s">
             </div>
-            <p>R(36,77) G(22,39) 17.20s</p>
+            <p>R(36,77) G(22,39) 16.91s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
-                   data-full="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
-                   alt="R(-8,76) G(-2,-3) 17.47s">
+                   src="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(18.04).jpg"
+                   data-full="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(18.04).jpg"
+                   alt="R(-8,76) G(-2,-3) 18.04s">
             </div>
-            <p>R(-8,76) G(-2,-3) 17.47s</p>
+            <p>R(-8,76) G(-2,-3) 18.04s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/lugano/aligned_(-29, 91)_(-17, 41)_(17.71).jpg"
-                   data-full="media/output/pyramid_sobel/lugano/aligned_(-29, 91)_(-17, 41)_(17.71).jpg"
-                   alt="R(-29,91) G(-17,41) 17.71s">
+                   src="media/output/pyramid_sobel/lugano/aligned_(-29, 91)_(-17, 41)_(19.10).jpg"
+                   data-full="media/output/pyramid_sobel/lugano/aligned_(-29, 91)_(-17, 41)_(19.10).jpg"
+                   alt="R(-29,91) G(-17,41) 19.10s">
             </div>
-            <p>R(-29,91) G(-17,41) 17.71s</p>
+            <p>R(-29,91) G(-17,41) 19.10s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
-                   data-full="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
-                   alt="R(12,177) G(10,80) 17.73s">
+                   src="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.90).jpg"
+                   data-full="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.90).jpg"
+                   alt="R(12,177) G(10,80) 17.90s">
             </div>
-            <p>R(12,177) G(10,80) 17.73s</p>
+            <p>R(12,177) G(10,80) 17.90s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/monastery/aligned_(2, 3)_(2, -3)_(1.50).jpg"
-                   data-full="media/output/pyramid_sobel/monastery/aligned_(2, 3)_(2, -3)_(1.50).jpg"
-                   alt="R(2,3) G(2,-3) 1.50s">
+                   src="media/output/pyramid_sobel/monastery/aligned_(2, 3)_(2, -3)_(1.52).jpg"
+                   data-full="media/output/pyramid_sobel/monastery/aligned_(2, 3)_(2, -3)_(1.52).jpg"
+                   alt="R(2,3) G(2,-3) 1.52s">
             </div>
-            <p>R(2,3) G(2,-3) 1.50s</p>
+            <p>R(2,3) G(2,-3) 1.52s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg"
-                   data-full="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.84).jpg"
-                   alt="R(37,176) G(29,78) 17.84s">
+                   src="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.53).jpg"
+                   data-full="media/output/pyramid_sobel/self/aligned_(37, 176)_(29, 78)_(17.53).jpg"
+                   alt="R(37,176) G(29,78) 17.53s">
             </div>
-            <p>R(37,176) G(29,78) 17.84s</p>
+            <p>R(37,176) G(29,78) 17.53s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/siren/aligned_(-24, 96)_(-7, 49)_(17.68).jpg"
-                   data-full="media/output/pyramid_sobel/siren/aligned_(-24, 96)_(-7, 49)_(17.68).jpg"
-                   alt="R(-24,96) G(-7,49) 17.68s">
+                   src="media/output/pyramid_sobel/siren/aligned_(-24, 96)_(-7, 49)_(18.32).jpg"
+                   data-full="media/output/pyramid_sobel/siren/aligned_(-24, 96)_(-7, 49)_(18.32).jpg"
+                   alt="R(-24,96) G(-7,49) 18.32s">
             </div>
-            <p>R(-24,96) G(-7,49) 17.68s</p>
+            <p>R(-24,96) G(-7,49) 18.32s</p>
           </div>
           <div class="card">
             <div class="img-frame">
               <img class="responsive zoomable"
-                   src="media/output/pyramid_sobel/three/aligned_(8, 111)_(12, 54)_(16.80).jpg"
-                   data-full="media/output/pyramid_sobel/three/aligned_(8, 111)_(12, 54)_(16.80).jpg"
-                   alt="R(8,111) G(12,54) 16.80s">
+                   src="media/output/pyramid_sobel/three/aligned_(8, 111)_(12, 54)_(16.96).jpg"
+                   data-full="media/output/pyramid_sobel/three/aligned_(8, 111)_(12, 54)_(16.96).jpg"
+                   alt="R(8,111) G(12,54) 16.96s">
             </div>
-            <p>R(8,111) G(12,54) 16.80s</p>
+            <p>R(8,111) G(12,54) 16.96s</p>
           </div>
           <div class="card">
             <div class="img-frame">
@@ -504,8 +506,8 @@
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
-                     data-full="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.82).jpg"
+                     src="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.50).jpg"
+                     data-full="media/output/pyramid_sobel/church/aligned_(-4, 58)_(4, 25)_(16.50).jpg"
                      alt="Before cropping (raw aligned)">
               </div>
               <p class="bw-cap">Before cropping</p>
@@ -534,8 +536,8 @@
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
-                     data-full="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(17.47).jpg"
+                     src="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(18.04).jpg"
+                     data-full="media/output/pyramid_sobel/lastochikino/aligned_(-8, 76)_(-2, -3)_(18.04).jpg"
                      alt="Before cropping (raw aligned)">
               </div>
               <p class="bw-cap">Before cropping</p>
@@ -566,8 +568,8 @@
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
-                     data-full="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.73).jpg"
+                     src="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.90).jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_(12, 177)_(10, 80)_(17.90).jpg"
                      alt="Before cropping (raw aligned)">
               </div>
               <p class="bw-cap">Before cropping</p>
@@ -665,7 +667,7 @@
                      data-full="media/output/pyramid_sobel/emir/aligned_cropped.jpg"
                      alt="Before white balance">
               </div>
-              <p class="bw-cap">After Cropping, before WB</p>
+              <p class="bw-cap">After cropping, before WB</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
@@ -677,6 +679,72 @@
               <p class="bw-cap">After WB</p>
             </div>
           </div>
+          
+          <!-- Better Color Mapping -->
+          </section>
+          <hr>
+          <section id="better-colormap">
+            <h3>Post-Processing: Better Color Mapping</h3>
+            <p>There is no need to, and obviously should not, assume that Prokudin-Gorskii's RGB filters capture 3 channels correctly as modern cameras do. Therefore, there should be a map that corrects the systematic color cast caused by Prokudin-Gorskii's filters, which means, the diagonal matrix in white balancing is not sufficient, there should be some coupling effects between channels. Here I implement a naive linear color mapping, which is simply followed by the same method that we used for white balancing, i.e., a $3 \times 3$ matrix multiplication on the raw RGB values. However, instead of being diagonal, the transformation matrix is full now. This color remapping is applied after white balance in my pipeline, therefore, assuming that the white balanced images are already well balanced, so this color remapping should not affect neutral colors (grey or white), therefore, the transformation matrix is defined as:</p>
+            <div class="math-block">$$
+            \begin{bmatrix}
+            R \\ G \\ B
+            \end{bmatrix} =
+            \begin{bmatrix}
+            1-a-b & a & b \\
+            c & 1-c-d & d \\
+            e & f & 1-g-h
+            \end{bmatrix}
+            \begin{bmatrix}
+            R' \\ G' \\ B'
+            \end{bmatrix}
+            $$</div>
+            <p>Since we don't have a "ground truth" for optimizing the parameters, here I tune them manually based on some reference images, which is sort of subjective, but the results look better to me.</p>
+            <!-- Color remapping -->
+            <h4 style="margin-top:10px;">Results of Automatic White Balancing</h4>
+            <p>Some selected results are shown below. My final implemented parameters are: $a=-0.12$, $b=-0.15$, $c=0.30$, $d=-0.08$, $e=0.02$, $f=0.00$.</p>
+            <div class="bw-grid">
+              <div class="bw-card">
+                <div class="bw-frame">
+                  <img class="responsive zoomable"
+                      src="media/output/pyramid_sobel/melons/aligned_cropped_wb.jpg"
+                      data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb.jpg"
+                      alt="After cropping + WB, before color remapping">
+                </div>
+                <p class="bw-cap">Before color remapping</p>
+              </div>
+              <div class="bw-card">
+                <div class="bw-frame">
+                  <img class="responsive zoomable"
+                      src="media/output/pyramid_sobel/melons/aligned_cropped_wb_map.jpg"
+                      data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb_map.jpg"
+                      alt="After color remapping">
+                </div>
+                <p class="bw-cap">After color remapping</p>
+              </div>
+            </div>
+
+            <div class="bw-grid">
+              <div class="bw-card">
+                <div class="bw-frame">
+                  <img class="responsive zoomable"
+                      src="media/output/pyramid_sobel/emir/aligned_cropped_wb.jpg"
+                      data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb.jpg"
+                      alt="After cropping + WB, before color remapping">
+                </div>
+                <p class="bw-cap">Before color remapping</p>
+              </div>
+              <div class="bw-card">
+                <div class="bw-frame">
+                  <img class="responsive zoomable"
+                      src="media/output/pyramid_sobel/emir/aligned_cropped_wb_map.jpg"
+                      data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb_map.jpg"
+                      alt="After color remapping">
+                </div>
+                <p class="bw-cap">After color remapping</p>
+              </div>
+            </div>
+          </section>
         </section>
         <hr>
 
@@ -718,17 +786,17 @@
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/pyramid_sobel/melons/aligned_cropped_wb.jpg"
-                     data-full="media/output/pyramid_sobel/melons/aligned_cropped.jpg"
-                     alt="Before contrast (after WB)">
+                     src="media/output/pyramid_sobel/melons/aligned_cropped_wb_map.jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb_map.jpg"
+                     alt="After cropping + WB + remapping, before contrast">
               </div>
-              <p class="bw-cap">After Cropping + WB, before contrast</p>
+              <p class="bw-cap">After cropping + WB, before contrast</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/pyramid_sobel/melons/aligned_cropped_wb_contrast.jpg"
-                     data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb_contrast.jpg"
+                     src="media/output/pyramid_sobel/melons/aligned_cropped_wb_map_contrast.jpg"
+                     data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb_map_contrast.jpg"
                      alt="After CLAHE">
               </div>
               <p class="bw-cap">After CLAHE</p>
@@ -739,17 +807,17 @@
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/pyramid_sobel/emir/aligned_cropped_wb.jpg"
-                     data-full="media/output/pyramid_sobel/emir/aligned_cropped.jpg"
-                     alt="Before contrast (after WB)">
+                     src="media/output/pyramid_sobel/emir/aligned_cropped_wb_map.jpg"
+                     data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb_map.jpg"
+                     alt="After cropping + WB + remapping, before contrast">
               </div>
-              <p class="bw-cap">After Cropping + WB, before contrast</p>
+              <p class="bw-cap">After cropping + WB, before contrast</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/pyramid_sobel/emir/aligned_cropped_wb_contrast.jpg"
-                     data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb_contrast.jpg"
+                     src="media/output/pyramid_sobel/emir/aligned_cropped_wb_map_contrast.jpg"
+                     data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb_map_contrast.jpg"
                      alt="After CLAHE">
               </div>
               <p class="bw-cap">After CLAHE</p>
@@ -758,32 +826,167 @@
         </section>
         <hr>
 
-        <section id="better-colormap">
-          <h3>Post-Processing: Better Color Mapping</h3>
-          <p>TBD</p>
-          <!-- Color transfer (占位示例) -->
+       <h3>Results of Final Pipeline (Align $\to$ Cropping $\to$ WB $\to$ Color Remapping $\to$ Contrast)</h3>
+       <p>Finally, let's implement aforementioned algorithms and pre-/post-processing techniques to process the 14 images at hand, which are shown below. The run time only considers the alignment step, excluding post-processing.</p>
+        <div class="multi-align-grid">
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/cathedral/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/cathedral/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(3,12) G(2,5) 1.50s">
+            </div>
+            <p>R(3,12) G(2,5) 1.50s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/church/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/church/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(-4,58) G(4,25) 16.50s">
+            </div>
+            <p>R(-4,58) G(4,25) 16.50s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/emir/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/emir/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(40,107) G(23,49) 16.92s">
+            </div>
+            <p>R(40,107) G(23,49) 16.92s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/harvesters/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/harvesters/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(13,123) G(17,60) 18.67s">
+            </div>
+            <p>R(13,123) G(17,60) 18.67s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/icon/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/icon/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(23,90) G(17,42) 17.76s">
+            </div>
+            <p>R(23,90) G(17,42) 17.76s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/italil/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/italil/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(36,77) G(22,39) 16.91s">
+            </div>
+            <p>R(36,77) G(22,39) 16.91s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/lastochikino/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/lastochikino/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(-8,76) G(-2,-3) 18.04s">
+            </div>
+            <p>R(-8,76) G(-2,-3) 18.04s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/lugano/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/lugano/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(-29,91) G(-17,41) 19.10s">
+            </div>
+            <p>R(-29,91) G(-17,41) 19.10s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/melons/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/melons/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(12,177) G(10,80) 17.90s">
+            </div>
+            <p>R(12,177) G(10,80) 17.90s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/monastery/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/monastery/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(2,3) G(2,-3) 1.52s">
+            </div>
+            <p>R(2,3) G(2,-3) 1.52s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/self/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/self/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(37,176) G(29,78) 17.53s">
+            </div>
+            <p>R(37,176) G(29,78) 17.53s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/siren/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/siren/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(-24,96) G(-7,49) 18.32s">
+            </div>
+            <p>R(-24,96) G(-7,49) 18.32s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/three/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/three/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(8,111) G(12,54) 16.96s">
+            </div>
+            <p>R(8,111) G(12,54) 16.96s</p>
+          </div>
+          <div class="card">
+            <div class="img-frame">
+              <img class="responsive zoomable"
+                   src="media/output/pyramid_sobel/tobolsk/aligned_cropped_wb_map_contrast.jpg"
+                   data-full="media/output/pyramid_sobel/tobolsk/aligned_cropped_wb_map_contrast.jpg"
+                   alt="R(3,6) G(2,3) 1.52s">
+            </div>
+            <p>R(3,6) G(2,3) 1.52s</p>
+          </div>
+        </div>
+      </section>
+      <hr>
+
+      <h3>Performance on My Own Selections (looks good :D)</h3>
+      <p>As an structural engineer, I selected some photos about structures (buildings and dridges) to test the performance and robustness of my algorithm, and they all look good to me!</p>
           <div class="bw-grid">
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/large_pyramid_sobel/emir_cropped_wb_contrast.jpg"
-                     data-full="media/output/large_pyramid_sobel/emir_cropped_wb_contrast.jpg"
-                     alt="Before color transfer">
+                     src="media/output/pyramid_sobel/master-pnp-prok-00200-00228u/aligned_cropped_wb_map_contrast.jpg"
+                     data-full="media/output/pyramid_sobel/master-pnp-prok-00200-00228u/aligned_cropped_wb_map_contrast.jpg"
+                     alt="Own selection 1">
               </div>
-              <p class="bw-cap">Before color transfer</p>
             </div>
             <div class="bw-card">
               <div class="bw-frame">
                 <img class="responsive zoomable"
-                     src="media/output/large_pyramid_sobel/emir_color_transfer.jpg"
-                     data-full="media/output/large_pyramid_sobel/emir_color_transfer.jpg"
-                     alt="After color transfer">
+                     src="media/output/pyramid_sobel/master-pnp-prok-00200-00282u/aligned_cropped_wb_map_contrast.jpg"
+                     data-full="media/output/pyramid_sobel/master-pnp-prok-00200-00282u/aligned_cropped_wb_map_contrast.jpg"
+                     alt="Own selection 2">
               </div>
-              <p class="bw-cap">After color transfer</p>
+            </div>
+            <div class="bw-card">
+              <div class="bw-frame">
+                <img class="responsive zoomable"
+                     src="media/output/pyramid_sobel/master-pnp-prok-00300-00344u/aligned_cropped_wb_map_contrast.jpg"
+                     data-full="media/output/pyramid_sobel/master-pnp-prok-00300-00344u/aligned_cropped_wb_map_contrast.jpg"
+                     alt="Own selection 3">
+              </div>
             </div>
           </div>
-        </section>
-      </section>
 
       <!-- footer -->
       <footer>
