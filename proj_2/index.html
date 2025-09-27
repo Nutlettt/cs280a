@@ -82,7 +82,7 @@
 
       <section id="introduction">
         <h2><u>Introduction</u></h2>
-        <p>In this project, we first implement our own 2D convolution function from scratch, then explore various filters and the mathematical properties of convolution operation. After that, we apply our convolution and filtering techniques, together with knowledge of frequencies, to achieve and visualize various interesting processing tasks, including edge detection, image sharpening, hybrid images, and image blending.</p>
+        <p>In this project, we will first implement our own 2D convolution function from scratch, then explore various filters and the mathematical properties of convolution operation. After that, we will apply our convolution and filtering techniques, together with knowledge of frequencies, to achieve and visualize various interesting processing tasks, including edge detection, image sharpening, hybrid images, and image blending.</p>
         <div class="discussion-card">
           <h3>Highlights</h3>
           <ul>
@@ -214,7 +214,7 @@
           <p>Let's convolve $D_x$ and $D_y$ to the image <code>cameraman</code> and see what we get. Ideally, image gradients should visually highlight edges, where the $D_x$, $D_y$ provide the vertical and horizontal edges, and the gradient magnitude $\|\nabla I\|$ gives the overall strength of the edges. Furthermore, if we binarize $\|\nabla I\|$ with a threshold, we can obtain a cleaner edge map (if the threshold is tuned appropriately).</p>
           <p>There is a trade-off between edge preservation and noise suppression: higher thresholds can suppress more noise but may also remove fine details, causing discontinuities of the edges, while lower thresholds may preserve more details but also retain more noise. However, since $D_x$ and $D_y$ are very sensitive to high frequencies, finding an appropriate threshold becomes critical but challenging. Instead using the values of $\|\nabla I\|$ directly, I define the thresholds based on the $\max \|\nabla I\|$, hence, $\text{threshold} = \alpha \times \max \|\nabla I\|$. A set of thresholds is tested and visualized below.</p>
           <figure class="figure-center">
-          <img src="media/output/fd_cameraman_thresholds.png" alt="cameraman edges from Dx and Dy binarized with different thresholds" class="zoomable" data-full="media/output/fd_cameraman_thresholds">
+          <img src="media/output/fd_cameraman_thresholds.png" alt="cameraman edges from Dx and Dy binarized with different thresholds" class="zoomable" data-full="media/output/fd_cameraman_thresholds.png">
           </figure>
           <p>As a balanced choice, here we adopt $\alpha = 0.15$ for our threshold, which preserves most major edges without discontinuity, while suppressing noises to an acceptable range. Then, the visualization of each aspect of image gradients is shown in the following figure.</p>
           <figure class="figure-center">
@@ -409,7 +409,13 @@
 
         <section id="part-2-4-bw">
           <h3><u>Bells &amp; Whistles: Enhancing Image Blending with Color</u></h3>
-          <p>TBD.</p>
+          <p>Here, let's explore if and how the choice of color or grayscale affects the blending results. The grayscaled version of two of the colorful blend images are shown below. One can see that there is almost no difference in detail blending compared to the colored versions, at least I can not distinguish them in detailed feature level at the seams. However, since color itself can provide us visual information, the transition zone will still be visually apparent and somewhat unnatural when the colors are in strong contract, especially if there are very tiny and high frequent features (e.g., the fluff of the cat). For such cases, if we move blending operation to grascale, hence, throughing away color information and only keep intensities, then the illusion caused by color will be supressed, and the blending will look more natural. In conclusion, the algorithm performs similarly, but removing chroma (grayscale) reduces the perceived seam visibility.</p>
+        <figure class="figure-center">
+        <img src="media/output/oraple_gray_results.png" alt="hybrid image"
+            class="zoomable" data-full="media/output/oraple_gray_results.png">
+        <img src="media/output/catman_gray_results.png" alt="catman"
+            class="zoomable" data-full="media/output/catman_gray_results.png">
+        </figure>
         </section>           
         </section>
 
