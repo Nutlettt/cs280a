@@ -2,22 +2,43 @@
   Theme toggle with memory & system
   ================================ */
 
-(function(){
-  const root = document.documentElement;
-  const KEY = 'site-theme';
-  function apply(t){ root.classList.toggle('theme-light', t==='light'); root.classList.toggle('theme-dark', t==='dark'); }
-  function init(){
-    let t = localStorage.getItem(KEY);
-    if(!t){ t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light':'dark'; }
-    apply(t);
+const STORAGE_KEY = 'theme';
+const DEFAULT_THEME = 'light';
+const root = document.documentElement;
+const body = document.body;
+const themeBtn = document.getElementById('theme-toggle');
+
+function applyTheme(theme) {
+  const dark = theme === 'dark';
+  const light = !dark;
+
+  root.setAttribute('data-theme', theme);
+  body.setAttribute('data-theme', theme);
+
+  const darkClasses = ['dark', 'dark-theme', 'theme-dark', 'mode-dark'];
+  const lightClasses = ['light', 'light-theme', 'theme-light', 'mode-light'];
+
+  darkClasses.forEach(cls => {
+    root.classList.toggle(cls, dark);
+    body.classList.toggle(cls, dark);
+  });
+  lightClasses.forEach(cls => {
+    root.classList.toggle(cls, light);
+    body.classList.toggle(cls, light);
+  });
+
+  localStorage.setItem(STORAGE_KEY, theme);
+  if (themeBtn) {
+    themeBtn.title = `Switch to ${dark ? 'light' : 'dark'} theme`;
   }
-  init();
-  const btn = document.getElementById('theme-toggle');
-  if(btn){ btn.addEventListener('click', ()=>{
-    const next = root.classList.contains('theme-light') ? 'dark':'light';
-    localStorage.setItem(KEY,next); apply(next);
-  }); }
-})();
+}
+
+applyTheme(localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME);
+
+themeBtn?.addEventListener('click', () => {
+  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+});
 
 /* =====================
   Highlight active link
