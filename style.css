@@ -15,11 +15,11 @@ main hr {
   padding: 0 24px;
   height: var(--topbar-height);
   box-shadow: none;
-  position: fixed;          /* 固定顶部，不再受滚动影响 */
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 120;             /* 高于侧边栏 */
+  z-index: 120;
 }
 .navbar-left {
   display: flex;
@@ -196,7 +196,6 @@ a:hover, a:focus {
   text-decoration: underline;
 }
 
-/* 让所有正文超链接在未悬停时也有弱提示，不显眼但可辨识 */
 main a, .main-center a, section a, p a, li a {
   color: var(--link, #7aa2f7);
   text-decoration: underline dotted;

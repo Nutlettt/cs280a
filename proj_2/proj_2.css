@@ -590,7 +590,7 @@ a:hover, a:focus {
 /* Remove any earlier custom token overrides to let GitHub theme colors show */
 /* DELETE prior rules like .hljs-keyword { ... } if you added them */
 
-/* --- Code highlight overrides / ensure theme not被全局样式抹掉 --- */
+
 .code-card pre {
   background: #f6f8fa;
 }
@@ -604,7 +604,7 @@ pre code.hljs, code.hljs {
   -webkit-font-smoothing: auto;
 }
 
-/* 具体 token 颜色（GitHub 风格简化版） */
+/* Code token colors */
 .hljs-comment,
 .hljs-quote { color: #6a737d; font-style: italic; }
 
@@ -636,7 +636,7 @@ pre code.hljs, code.hljs {
 .hljs-addition { background: #e6ffed; color: #22863a; }
 .hljs-deletion { background: #ffeef0; color: #b31d28; }
 
-/* 暗色主题（如果以后启用） */
+/* Dark theme adjustments */
 :root[data-theme="dark"] pre code.hljs { color: #e6edf3; }
 :root[data-theme="dark"] .code-card pre { background: #1f2430; }
 :root[data-theme="dark"] .hljs-comment,
@@ -653,14 +653,14 @@ pre code.hljs, code.hljs {
 
 /* ===== Single centered figure (Project 2) ===== */
 .figure-center {
-  max-width: 980px;          /* 控制阅读宽度 */
-  margin: 2rem auto;          /* 居中 */
+  max-width: 980px;     
+  margin: 2rem auto;     
   text-align: center;
 }
 
 .figure-center img {
   display: block;
-  width: 100%;                /* 自适应缩放 */
+  width: 100%;         
   height: auto;
   margin: 0 auto;
   border: 1px solid var(--card-line, #d0d7de);
@@ -692,20 +692,16 @@ pre code.hljs, code.hljs {
   color: #8b949e;
 }
 
-/* 可选：限制特别宽的图的最大高度以免太“高” */
 .figure-center img.max-h-560 {
   max-height: 560px;
   object-fit: contain;
 }
 
-/* 若想小尺寸居中展示（例如频谱） */
 .figure-center.narrow {
   max-width: 640px;
 }
 
-/* 可选：让单张图片也具备 hover-lift */
 .figure-center img {
-  /* 保留你原来的样式基础上再附加 */
   transition: transform .4s cubic-bezier(.22,1,.36,1), box-shadow .4s ease;
 }
 .figure-center img:hover {
