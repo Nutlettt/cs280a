@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 2: Fun with Filters and Frequencies!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="proj_3.css">
+  <link id="hljs-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js" defer></script>
+  <script defer>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.hljs) hljs.highlightAll();
+    });
+  </script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$','$$'], ['\\[','\\]']],
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script','noscript','style','textarea','pre','code','figure']
+      }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body class="theme-light" data-theme="light">
+  <nav class="top-navbar">
+    <div class="navbar-left">
+      <a class="breadcrumb" href="../index.html">CS280A</a>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb" aria-current="page">Project 2</span>
+    </div>
+    <div class="navbar-right">
+      <button id="sidebar-toggle" class="top-icon-btn" aria-label="Toggle sidebar" title="Toggle sidebar">☰</button>
+      <button id="theme-toggle" class="top-icon-btn" aria-label="Toggle color theme" title="Toggle color theme">🌓</button>
+    </div>
+  </nav>
+
+  <aside id="sidebar" class="sidebar collapsed">
+    <nav>
+      <ul>
+        <li>
+          <a href="#part-A">Image Warping and Mosaicing</a>
+          <ul>
+            <li><a href="#part-A-1">Shoot and Digitize Pictures</a></li>
+            <li><a href="#part-A-2">Recover Homographies</a></li>
+            <li><a href="#part-A-3">Warp the Images</a></li>
+            <li><a href="#part-A-4">Blend Images Into a Mosaic</a></li>
+            <li><a href="#part-A-5">B &amp; W: Cylindrical Warping</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#part-B">Feature Matching for Auto Stitching</a>
+          <ul>
+            <li><a href="#part-B-1">Harris Corner Detection</a></li>
+            <li><a href="#part-B-2">Feature Descriptor Extraction</a></li>
+            <li><a href="#part-B-3">Feature Matching</a></li>
+            <li><a href="#part-B-4">RANSAC for Robust Homography</a></li>
+            <li><a href="#part-B-5">B &amp; W: Panorama Recognition</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+  <div class="overlay" id="sidebar-overlay" aria-hidden="true"></div>
+
+  <main class="with-sidebar">
+    <div class="main-center">
+      <header>
+        <h1>[Auto] Stitching Photo Mosaics</h1>
+      </header>
+
+      <div class="intro-image-row">
+        <img src="media/output/hybrid1.png" alt="TBD" class="intro-img-pair">
+        <img src="media/output/catman.png" alt="TBD" class="intro-img-pair">
+      </div>
+
+      <section id="introduction">
+        <h2><u>Introduction</u></h2>
+        <p>This project is all about stitching together many photographs to create larger composite images.</p>
+        <div class="discussion-card">
+          <h3>Highlights</h3>
+          <ul>
+            <li>TBD</li>
+          </ul>
+        </div>
+      </section>
+      <hr>
+
+      <section id="part-A">
+        <h2><u>Part A: Image Warping and Mosaicing</u></h2>
+        <p>The goal of this assignment is to get your hands dirty in different aspects of image warping with a “cool” application -- image mosaicing. You will take two or more photographs and create an image mosaic by registering, projective warping, resampling, and compositing them. Along the way, you will learn how to compute homographies, and how to use them to warp images.</p>
+        <section id="part-A-1">
+          <h3><u>A.1: Shoot and Digitize Pictures</u></h3>
+          <p>Before any coding, the first step is to take some pictures for stitching. Recall that the assumption behind image mosaicing is that the stitched images are taken from the same center of projection (COP), therefore, quality of final result can be significantly affected by the input images, especially when objects are close to the camera. In practice, I followed the rules below for taking photos:</p>
+          <ul>
+            <li>Fix the COP and only rotate the camera, i.e., rotate about the CMOS of the camera.</li>
+            <li>Use small aperture (large f-number) to ensure there is enough depth of field and (almost) everything is in focus.</li>
+            <li>Fix all other camera parameters, including focal length, ISO, S.S., and WB, which ensures that the photos have similar brightness and color and further avoids potential blending artifacts.</li>
+            <li>Overlap the fields of view significantly, e.g., at least $50\%$.</li>
+        </section>
+
+        <section id="part-A-2">
+          <h3><u>A.2: Recover Homographies</u></h3>
+          <p>Before warping and stitching our images, it is necessary to recover the parameters of the homography transformation matrix $\mathbf{H} \in \mathbb{R}^{3 \times 3}$ between each pair of images, such that the new coordinate of images $\mathbf{p}' = [u,v]^{\top}$ can be obtained from original coordinates $\mathbf{p} = [x,y]^{\top}$ via linear transformation $\mathbf{p}' = \mathbf{H} \mathbf{p}$. Recall that $\mathbf{H}$ has $8$ degree of freedoms (DOFs) since the last element is a scaling factor and can be fixed to $1$, therefore, $4$ pairs of corresponding points $(\mathbf{p}',\mathbf{p})$ are sufficient to recover $\mathbf{H}$ through standard techniques.</p>
+          <p>However, in practice, recovering $\mathbf{H}$ from only $4$ pairs of corresponding points usually leads to noisy estimates, therefore, here we adopt a least-squares setting to robustly estimate $\mathbf{H}$ from $n \ge 4$ pairs of corresponding points, i.e., solving the $\mathbf{H}$ from an overdetermined linear system:
+            $$ \mathbf{A} \mathbf{h} = \mathbf{b} ,$$
+          where $\mathbf{h} \in \mathbb{R}^8$ is the vectorized form of 8 DOFs of $\mathbf{H}$, $\mathbf{A} \in \mathbb{R}^{2n \times 8}$ and $\mathbf{b} \in \mathbb{R}^{2n}$ are constructed from the $n$ pairs of corresponding points.</p>
+          <p>For the derivation of such a linear system, we start from the homography transformation of a single pair of corresponding points, say, $[x,y]^{\top} \to [u,v]^{\top}$, expanded as:
+            $$ 
+            \begin{bmatrix} \lambda u \\ \lambda v \\ \lambda \end{bmatrix} = 
+            \begin{bmatrix}
+            h_{1} & h_{2} & h_{3} \\
+            h_{4} & h_{5} & h_{6} \\
+            h_{7} & h_{8} & 1
+            \end{bmatrix} \begin{bmatrix}x \\ y \\ 1 \end{bmatrix},
+            $$
+          where $\lambda$ is the scaling factor due to the introduction of [homogeneous coordinates](https://en.wikipedia.org/wiki/Homogeneous_coordinates). In order to eliminate the $\lambda$ algebraically, the output vector $[\lambda u, \lambda v, \lambda]^{\top}$ can be rewritten by normalizing the first two elements with the last element, i.e.,
+            $$
+            \begin{aligned}
+            u & = \frac{\lambda u}{\lambda} = (h_{1} x + h_{2} y + h_{3}) / (h_{7} x + h_{8} y + 1) \\
+            v &= \frac{\lambda v}{\lambda} = (h_{4} x + h_{5} y + h_{6}) / (h_{7} x + h_{8} y + 1).
+            \end{aligned}
+            $$
+          The above equations can be further rearranged to our expected linear system form:
+            $$
+            \begin{matrix}
+            h_{1} x + h_{2} y + h_{3} - u h_{7} x - u h_{8} y & = & u \\
+            h_{4} x + h_{5} y + h_{6} - v h_{7} x - v h_{8} y & = & v,
+            \end{matrix}
+            $$
+          which can be rewritten in matrix form as:
+            $$
+            \begin{bmatrix}
+            x & y & 1 & 0 & 0 & 0 & -ux & -uy \\
+            0 & 0 & 0 & x & y & 1 & -vx & -vy
+            \end{bmatrix}
+            \begin{bmatrix}h_{1} \\ h_{2} \\ h_{3} \\ h_{4} \\ h_{5} \\ h_{6} \\ h_{7} \\ h_{8} \end{bmatrix} =
+            \begin{bmatrix} u \\ v \end{bmatrix} \quad
+            \Longrightarrow \quad
+            \mathbf{A} \mathbf{h} = \mathbf{b},
+            $$
+          i.e., exactly the linear system we are looking for. Finally, with $n$ pairs of corresponding points, the linear system can be constructed by simply stacking the above equations vertically, i.e., $\mathbf{A} \in \mathbb{R}^{2n \times 8}$ and $\mathbf{b} \in \mathbb{R}^{2n}$.
+          Once we have the $\mathbf{A} \mathbf{h} = \mathbf{b}$ constructed, where $n \ge 4$, solving $\mathbf{h}$ via least-squares from such an overdetermined linear system becomes trivial, i.e., with the assumption that $\text{rank}(\mathbf{A}) = 8$, the optimal solution $\mathbf{h}^{*}$ can be obtained in closed-form as:
+            $$ \mathbf{h}^{*} = \arg\min_{\mathbf{h}} \|\mathbf{A} \mathbf{h} - \mathbf{b}\|^2_2 = \mathbf{A}^{\dagger} \mathbf{b},$$
+          where $\mathbf{A}^{\dagger}$ is the <a href="https://en.wikipedia.org/wiki/Moore–Penrose_inverse">Moore-Penrose pseudo inverse</a> of $\mathbf{A}$. Finally, the homography matrix $\mathbf{H}$ can be reconstructed from $\mathbf{h}^{*}$ by appending $1$ to the end of $\mathbf{h}^{*}$ and reshaping it back to a $3 \times 3$ matrix.</p>
+        </section>
+
+        <section id="part-A-3">
+          <h3><u>A.3: Warp the Images</u></h3>
+          <p>For applying any image transformation to warp images, including the homography we just recovered, the pixels in the output need to be filled in by sampling and interpolating from the input image, otherwise artifacts such as holes and aliasing may occur. Therefore, here we implement inverse warping with two interpolation methods from scratch, including:</p>
+          <ul>
+            <li>Nearest Neighbor Interpolation: Round coordinates to the nearest pixel value, and</li>
+            <li>Bilinear Interpolation: Use weighted average of four neighboring pixels.</li>
+          </ul>
+          <p>Recall that there are multiple coordinate conventions, here we follow the one that considers $(0,0)$ as the "center of the first pixel", $(0.5, 0)$ to be in between the first and second pixel, and so on, which makes our life easier when dealing with interpolation.</p>
+        </section>
+
+        <section id="part-A-4">
+          <h3><u>A.4: Blend the Image into a Mosaic</u></h3>
+          <p>TBD</p>
+        </section>
+
+        <section id="part-A-5">
+          <h3><u>A.5: Bells & Whistles: Cylindrical Warping</u></h3>
+          <p>TBD</p>
+        </section>
+      </section>
+      <hr>
+
+      <footer>
+        <p>© 2025 ZHOU Guanren |
+          <a href="mailto:guanren_zhou@berkeley.edu">📧 Email</a> |
+          <a href="https://github.com/Nutlettt" target="_blank" rel="noopener noreferrer">
+            <img src="../media/github.png" alt="GitHub" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;">
+            GitHub
+          </a>
+        </p>
+      </footer>
+    </div>
+  </main>
+
+  <div class="lightbox" id="pg-lightbox">
+    <div class="lb-backdrop"></div>
+    <div class="lb-inner">
+      <img id="lb-img" alt="">
+      <div class="lb-caption" id="lb-cap"></div>
+      <button class="lb-close" id="lb-close" aria-label="Close">&times;</button>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebarBtn = document.getElementById('sidebar-toggle');
+    function closeSidebar(){ sidebar.classList.add('collapsed'); overlay.classList.remove('open'); }
+    function toggleSidebar(){ const collapsed = sidebar.classList.toggle('collapsed'); overlay.classList.toggle('open', !collapsed); }
+    sidebarBtn && sidebarBtn.addEventListener('click', toggleSidebar);
+    overlay && overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSidebar(); });
+
+    const themeBtn = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+    const targets = [root, document.body];
+    function applyTheme(t){
+      root.setAttribute('data-theme', t);
+      document.body.setAttribute('data-theme', t);
+      const darkOn = t === 'dark';
+      const classes = ['dark','dark-theme','theme-dark','mode-dark'];
+      classes.forEach(c=>{
+        root.classList.toggle(c, darkOn);
+        document.body.classList.toggle(c, darkOn);
+      });
+      const lightClasses = ['light','light-theme','theme-light','mode-light'];
+      lightClasses.forEach(c=>{
+        root.classList.toggle(c, !darkOn);
+        document.body.classList.toggle(c, !darkOn);
+      });
+      // highlight.js theme swap
+      const hlLink = document.getElementById('hljs-theme');
+      if (hlLink) {
+        hlLink.href = darkOn
+          ? 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css'
+          : 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css';
+      }
+      localStorage.setItem('theme', t);
+      if (themeBtn) themeBtn.title = 'Switch to ' + (darkOn ? 'light' : 'dark') + ' theme';
+    }
+    const stored = localStorage.getItem('theme');
+    applyTheme(stored || 'light');
+
+    themeBtn && themeBtn.addEventListener('click', ()=>{
+      const next = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{});
+
+    const lb = document.getElementById('pg-lightbox');
+    if(lb){
+      const imgEl = document.getElementById('lb-img');
+      const capEl = document.getElementById('lb-cap');
+      const closeBtn = document.getElementById('lb-close');
+      function open(src, cap){ imgEl.src = src; capEl.textContent = cap || ''; lb.classList.add('open'); }
+      function close(){ lb.classList.remove('open'); imgEl.src=''; }
+      document.querySelectorAll('img.zoomable').forEach(im=>{
+        im.addEventListener('click', ()=> open(im.getAttribute('data-full')||im.src, im.alt));
+      });
+      lb.addEventListener('click', e=>{ if(e.target===lb || e.target.classList.contains('lb-backdrop')) close(); });
+      closeBtn && closeBtn.addEventListener('click', close);
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape' && lb.classList.contains('open')) close(); });
+    }
+  })();
+  </script>
+  <script>
+    window.addEventListener('load', () => {
+      if (!window.hljs) return;
+      document.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+</body>
+</html>
