@@ -85,8 +85,14 @@
         <p>This project is all about stitching together many photographs to create larger composite images.</p>
         <div class="discussion-card">
           <h3>Highlights</h3>
-          <ul>
-            <li>TBD</li>
+          <il>
+            <li>Recovering homographies from point correspondences</li>
+            <li>Image warping with inverse mapping and resampling</li>
+            <li>Image stitching and blending</li>
+            <li>Cylindrical warping</li>
+            <li>Automatic corner feature detection and matching</li>
+            <li>RANSAC for robust homography estimation</li>
+            <li>Automatic panorama recognition</li>
           </ul>
         </div>
       </section>
@@ -98,11 +104,12 @@
         <section id="part-A-1">
           <h3><u>A.1: Shoot and Digitize Pictures</u></h3>
           <p>Before any coding, the first step is to take some pictures for stitching. Recall that the assumption behind image mosaicing is that the stitched images are taken from the same center of projection (COP), therefore, quality of final result can be significantly affected by the input images, especially when objects are close to the camera. In practice, I followed the rules below for taking photos:</p>
-          <ul>
+          <ol>
             <li>Fix the COP and only rotate the camera, i.e., rotate about the CMOS of the camera.</li>
             <li>Use small aperture (large f-number) to ensure there is enough depth of field and (almost) everything is in focus.</li>
             <li>Fix all other camera parameters, including focal length, ISO, S.S., and WB, which ensures that the photos have similar brightness and color and further avoids potential blending artifacts.</li>
             <li>Overlap the fields of view significantly, e.g., at least $50\%$.</li>
+          </ol>
         </section>
 
         <section id="part-A-2">
@@ -168,7 +175,35 @@
 
         <section id="part-A-5">
           <h3><u>A.5: Bells & Whistles: Cylindrical Warping</u></h3>
-          <p>TBD</p>
+          <p>Mosaics created by homography warping woks fine when the assumption of planar scene holds and the field of view is not too wide, however, when we have very wide field of view, e.g., over $180^{\circ}$, such mosaics usually suffer from severe distortions. To achieve better representation of ultra-wide mosaics, here we implement cylindrical projection to warp images onto a cylinder surface centered at the COP with unit radius.
+
+          <p>I follow [this open source lecture slides](https://www.csie.ntu.edu.tw/~cyy/courses/vfx/12spring/lectures/handouts/lec04_stitching_4up.pdf) for my notation, derivation, and implementation. Suppose we have a pinhole camera with focal length $f$, for any 3D point in the word coordinate system $(X,Y,Z)$, its projection on the image plane is recorded as $(x,y)$ with central point at $(x_c, y_c)$ (typically the center of the image). Therefore, what we have now is the photographs of the 3D world, i.e., multiple image planes with the same COP and $f$, then, what we want is to warp those image planes $I$ with points $(x,y)$ onto a cylindrical surface parameterized by $(\theta, h)$, and then unroll the cylinder to a flat plane $\tilde{I}$ with coordinates $(\tilde{x}, \tilde{y})$.</p>
+
+          <h4>Forward Mapping</h4>
+          <p>The forward mapping involves two steps:</p>
+          <ol>
+            <li>Project the image plane points $(x,y)$ to the cylinder surface, i.e., $(x,y) \to (\theta, h)$, through the following equations:
+              $$
+              \theta = \arctan\frac{x - x_c}{f}, \quad h = \frac{y - y_c}{\sqrt{(x - x_c)^2 + f^2}}.
+              $$</li>
+            <li>Unroll the cylinder surface to a flat plane, i.e., $(\theta, h) \to (\tilde{x}, \tilde{y})$, via:
+              $$
+              \tilde{x} = f \theta + \tilde{x}_c, \quad \tilde{y} = f h + \tilde{y}_c,
+              $$
+              where $(\tilde{x}_c, \tilde{y}_c)$ is the central point of the unrolled cylinder image.</li>
+          </ol>
+          <h4>Inverse Mapping</h4>
+          <p>For image warping, we need the inverse mapping, i.e., $(\tilde{x}, \tilde{y}) \to (x,y)$, which can be derived by reversing the above two steps:</p>
+          <ol>
+            <li>Roll the flat plane back to the cylinder surface, i.e., $(\tilde{x}, \tilde{y}) \to (\theta, h)$, via:
+              $$
+              \theta = \frac{\tilde{x} - \tilde{x}_c}{f}, \quad h = \frac{\tilde{y} - \tilde{y}_c}{f}.
+              $$</li>
+            <li>Project the cylinder surface back to the image plane, i.e., $(\theta, h) \to (x,y)$, through:
+              $$
+              x = f \tan\theta + x_c, \quad y = f \frac{h}{\cos\theta} + y_c.
+              $$</li>
+          </ol>
         </section>
       </section>
       <hr>
