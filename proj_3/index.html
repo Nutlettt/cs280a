@@ -2,7 +2,7 @@
 <html lang="en" class="theme-light" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <title>Project 2: Fun with Filters and Frequencies!</title>
+  <title>Project 3: [Auto] Stitching Photo Mosaics</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../style.css">
   <link rel="stylesheet" href="proj_3.css">
@@ -33,7 +33,7 @@
     <div class="navbar-left">
       <a class="breadcrumb" href="../index.html">CS280A</a>
       <span class="breadcrumb-sep">›</span>
-      <span class="breadcrumb" aria-current="page">Project 2</span>
+      <span class="breadcrumb" aria-current="page">Project 3</span>
     </div>
     <div class="navbar-right">
       <button id="sidebar-toggle" class="top-icon-btn" aria-label="Toggle sidebar" title="Toggle sidebar">☰</button>
@@ -76,13 +76,12 @@
       </header>
 
       <div class="intro-image-row">
-        <img src="media/output/hybrid1.png" alt="TBD" class="intro-img-pair">
-        <img src="media/output/catman.png" alt="TBD" class="intro-img-pair">
+        <img src="media/campus_cylindrical_mosaic_notitle.jpeg" alt="Cylindrical Campus Scenery Mosaic" class="intro-img-pair">
       </div>
 
       <section id="introduction">
         <h2><u>Introduction</u></h2>
-        <p>This project is all about stitching together many photographs to create larger composite images.</p>
+        <p>This project is all about stitching together many photographs to create a mosaic. In part A, we will first explore the homography transformation, recover it from hand-crafted correspondences, and use it to warp the images through the inverse mapping method. Then we will warp and blend a set of images into a seamless mosaic. In part B, we will explore how to automate this process using a set of feature-based techniques.</p>
         <div class="discussion-card">
           <h3>Highlights</h3>
           <ul>
@@ -100,25 +99,36 @@
 
       <section id="part-A">
         <h2><u>Part A: Image Warping and Mosaicing</u></h2>
-        <p>The goal of this assignment is to get your hands dirty in different aspects of image warping with a “cool” application -- image mosaicing. You will take two or more photographs and create an image mosaic by registering, projective warping, resampling, and compositing them. Along the way, you will learn how to compute homographies, and how to use them to warp images.</p>
+        <p>In this part, we will take two or more photographs and create an image mosaic by registering, projective warping, resampling, and compositing them together, along with which we will learn how to compute homographies and use them to warp images.</p>
         <section id="part-A-1">
           <h3><u>A.1: Shoot and Digitize Pictures</u></h3>
-          <p>Before any coding, the first step is to take some pictures for stitching. Recall that the assumption behind image mosaicing is that the stitched images are taken from the same center of projection (COP), therefore, quality of final result can be significantly affected by the input images, especially when objects are close to the camera. In practice, I followed the rules below for taking photos:</p>
+          <p>Before any coding, the first step is to take some pictures for stitching. Recall that the assumption behind image mosaicing is that the stitched images are taken from the same center of projection (COP); therefore, the quality of the final result can be significantly affected by the input images, especially when objects are close to the camera. In practice, I followed the rules below for taking photos:</p>
           <ol>
             <li>Fix the COP and only rotate the camera, i.e., rotate about the CMOS of the camera.</li>
-            <li>Use small aperture (large f-number) to ensure there is enough depth of field and (almost) everything is in focus.</li>
-            <li>Fix all other camera parameters, including focal length, ISO, S.S., and WB, which ensures that the photos have similar brightness and color and further avoids potential blending artifacts.</li>
+            <li>Use a small aperture (large f-number) to ensure there is enough depth of field and (almost) everything is in focus.</li>
+            <li>Fix all other camera parameters, including focal length (I had to, cause my X100VI is a fixed lens camera...), ISO, S.S., and WB, which ensures that the photos have similar brightness and color and further avoids potential blending artifacts.</li>
             <li>Overlap the fields of view significantly, e.g., at least $50\%$.</li>
           </ol>
+          <p>These rules do help me to get satisfactory mosaics in the end. We will see the results later in parts A.4 and A.5. Since the raw photos exceeded 20MB each, I resized them by a factor of 0.25 to facilitate efficient processing and visualization, which are shown below.</p>
+          <p>The first set of photos is about the T.Y.Lin Structural Engineering Demonstration Laboratory on the 5th floor of Davis Hall. In case you are not familiar with <a href="https://en.wikipedia.org/wiki/Tung-Yen_Lin">Tung-Yen Lin (林同棪)</a>, he is a Chinese-American structural engineer and Berkeley alumnus who was the pioneer of standardizing the use of <a href="https://en.wikipedia.org/wiki/Prestressed_concrete">prestressed concrete</a> in building, bridges, and other structures. Stop by the lab if you are interested in learning more about his work and contributions to structural engineering.</p>
+          <figure class="figure-center">
+            <img src="media/output/TYLinLab_imgs.jpeg" alt="T.Y. Lin Lab Images" class="zoomable" data-full="media/output/TYLinLab_imgs.jpeg">
+          </figure>
+          <p>The second set of photos is about the campus scenery from the recently built <a href="https://www.lib.berkeley.edu/about/news/engineering-reopens">Kresge Engineering & Mathematical Sciences Library</a>. This set contains $12$ photos in total, which have a very wide field of view, so I divided them into two groups of $6$ photos each to create two mosaics for planar image stitching at A.4, and then used all $12$ photos to create a single mosaic for cylindrical image stitching at A.5.</p>
+          <figure class="figure-center">
+            <img src="media/output/campus_imgs.jpeg" alt="Campus Scenery Images" class="zoomable" data-full="media/output/campus_imgs.jpeg">
+            <img src="media/output/campus_left_imgs.jpeg" alt="Campus Scenery Images (left)" class="zoomable" data-full="media/output/campus_left_imgs.jpeg">
+            <img src="media/output/campus_right_imgs.jpeg" alt="Campus Scenery Images (right)" class="zoomable" data-full="media/output/campus_right_imgs.jpeg">
+          </figure>
         </section>
 
         <section id="part-A-2">
           <h3><u>A.2: Recover Homographies</u></h3>
-          <p>Before warping and stitching our images, it is necessary to recover the parameters of the homography transformation matrix $\mathbf{H} \in \mathbb{R}^{3 \times 3}$ between each pair of images, such that the new coordinate of images $\mathbf{p}' = [u,v]^{\top}$ can be obtained from original coordinates $\mathbf{p} = [x,y]^{\top}$ via linear transformation $\mathbf{p}' = \mathbf{H} \mathbf{p}$. Recall that $\mathbf{H}$ has $8$ degree of freedoms (DOFs) since the last element is a scaling factor and can be fixed to $1$, therefore, $4$ pairs of corresponding points $(\mathbf{p}',\mathbf{p})$ are sufficient to recover $\mathbf{H}$ through standard techniques.</p>
+          <p>Before warping and stitching our images, it is necessary to recover the parameters of the homography transformation matrix $\mathbf{H} \in \mathbb{R}^{3 \times 3}$ between each pair of images, such that the new coordinate of images $\mathbf{p}' = [u,v,1]^{\top}$ (in [homogeneous coordinates](https://en.wikipedia.org/wiki/Homogeneous_coordinates)) can be obtained from original coordinates $\mathbf{p} = [x,y,1]^{\top}$ via linear transformation $\mathbf{p}' = \mathbf{H} \mathbf{p}$. Recall that $\mathbf{H}$ has $8$ degree of freedoms (DOFs) since the last element is a scaling factor and can be fixed to $1$, therefore, $4$ pairs of corresponding points $(\mathbf{p}',\mathbf{p})$ are sufficient to recover $\mathbf{H}$ through standard techniques.</p>
           <p>However, in practice, recovering $\mathbf{H}$ from only $4$ pairs of corresponding points usually leads to noisy estimates, therefore, here we adopt a least-squares setting to robustly estimate $\mathbf{H}$ from $n \ge 4$ pairs of corresponding points, i.e., solving the $\mathbf{H}$ from an overdetermined linear system:
             $$ \mathbf{A} \mathbf{h} = \mathbf{b} ,$$
           where $\mathbf{h} \in \mathbb{R}^8$ is the vectorized form of 8 DOFs of $\mathbf{H}$, $\mathbf{A} \in \mathbb{R}^{2n \times 8}$ and $\mathbf{b} \in \mathbb{R}^{2n}$ are constructed from the $n$ pairs of corresponding points.</p>
-          <p>For the derivation of such a linear system, we start from the homography transformation of a single pair of corresponding points, say, $[x,y]^{\top} \to [u,v]^{\top}$, expanded as:
+          <p>For the derivation of such a linear system, we start from the homography transformation of a single pair of corresponding points, say, $[x,y,1]^{\top} \to [u,v,1]^{\top}$, expanded as:
             $$ 
             \begin{bmatrix} \lambda u \\ \lambda v \\ \lambda \end{bmatrix} = 
             \begin{bmatrix}
@@ -127,7 +137,7 @@
             h_{7} & h_{8} & 1
             \end{bmatrix} \begin{bmatrix}x \\ y \\ 1 \end{bmatrix},
             $$
-          where $\lambda$ is the scaling factor due to the introduction of [homogeneous coordinates](https://en.wikipedia.org/wiki/Homogeneous_coordinates). In order to eliminate the $\lambda$ algebraically, the output vector $[\lambda u, \lambda v, \lambda]^{\top}$ can be rewritten by normalizing the first two elements with the last element, i.e.,
+          where $\lambda$ is the scaling factor due to the introduction of homogeneous coordinates. In order to eliminate the $\lambda$ algebraically, the output vector $[\lambda u, \lambda v, \lambda]^{\top}$ can be rewritten by normalizing the first two elements with the last element, i.e.,
             $$
             \begin{aligned}
             u & = \frac{\lambda u}{\lambda} = (h_{1} x + h_{2} y + h_{3}) / (h_{7} x + h_{8} y + 1) \\
@@ -153,32 +163,76 @@
             \mathbf{A} \mathbf{h} = \mathbf{b},
             $$
           i.e., exactly the linear system we are looking for. Finally, with $n$ pairs of corresponding points, the linear system can be constructed by simply stacking the above equations vertically, i.e., $\mathbf{A} \in \mathbb{R}^{2n \times 8}$ and $\mathbf{b} \in \mathbb{R}^{2n}$.
+
           Once we have the $\mathbf{A} \mathbf{h} = \mathbf{b}$ constructed, where $n \ge 4$, solving $\mathbf{h}$ via least-squares from such an overdetermined linear system becomes trivial, i.e., with the assumption that $\text{rank}(\mathbf{A}) = 8$, the optimal solution $\mathbf{h}^{*}$ can be obtained in closed-form as:
             $$ \mathbf{h}^{*} = \arg\min_{\mathbf{h}} \|\mathbf{A} \mathbf{h} - \mathbf{b}\|^2_2 = \mathbf{A}^{\dagger} \mathbf{b},$$
           where $\mathbf{A}^{\dagger}$ is the <a href="https://en.wikipedia.org/wiki/Moore–Penrose_inverse">Moore-Penrose pseudo inverse</a> of $\mathbf{A}$. Finally, the homography matrix $\mathbf{H}$ can be reconstructed from $\mathbf{h}^{*}$ by appending $1$ to the end of $\mathbf{h}^{*}$ and reshaping it back to a $3 \times 3$ matrix.</p>
+          <h4>Demonstration</h4>
+          <p>For demonstration purposes, one pair of images from the T.Y.Lin Lab photo set is used to recover the homography between source to target images. The photos and correspondences are visualized below:</p>
+          <figure class="figure-center">
+            <img src="media/output/TYLinLab_2_3_correspondences.jpeg" alt="T.Y. Lin Lab Image Pair" class="zoomable" data-full="media/output/TYLinLab_2_3_correspondences.jpeg">
+          </figure>
+          whose recovered homography matrix is:
+          $$
+          \mathbf{H} = \begin{bmatrix}
+          1.47260848e+00 & 1.55969552e-02 & -1.22583715e+03 \\
+          1.37164518e-01 & 1.33024645e+00 & -1.98959220e+02 \\
+          2.48010867e-04 & -7.92021461e-07 & 1.00000000e+00
+          \end{bmatrix}.
+          $$
         </section>
 
         <section id="part-A-3">
           <h3><u>A.3: Warp the Images</u></h3>
-          <p>For applying any image transformation to warp images, including the homography we just recovered, the pixels in the output need to be filled in by sampling and interpolating from the input image, otherwise artifacts such as holes and aliasing may occur. Therefore, here we implement inverse warping with two interpolation methods from scratch, including:</p>
+          <p>For applying any image transformation to warp images, including the homography we just recovered, the pixels in the output need to be filled in by sampling and interpolating from the input image; otherwise, artifacts such as holes and aliasing may occur. Therefore, here we implement inverse warping with two interpolation methods from scratch, including:</p>
           <ul>
-            <li>Nearest Neighbor Interpolation: Round coordinates to the nearest pixel value, and</li>
-            <li>Bilinear Interpolation: Use weighted average of four neighboring pixels.</li>
+            <li><b>Nearest Neighbor Interpolation</b>: Round coordinates to the nearest pixel value, and</li>
+            <li><b>Bilinear Interpolation</b>: Use a weighted average of four neighboring pixels.</li>
           </ul>
-          <p>Recall that there are multiple coordinate conventions, here we follow the one that considers $(0,0)$ as the "center of the first pixel", $(0.5, 0)$ to be in between the first and second pixel, and so on, which makes our life easier when dealing with interpolation.</p>
+          <p>Recall that there are multiple coordinate conventions, here we follow the one that considers $(0,0)$ as the "center of the first pixel", $(0.5, 0)$ to be in between the first and second pixel, and so on, which makes our life easier when dealing with interpolation. The implemented process of warping one image to another can be roughly summarized as follows:</p>
+          <ol>
+            <li>Create a rectangular canvas that tightly bounds the forward-warped corners of the source image under $\mathbf{H}$, initialized to zeros (black)</li>
+            <li>For each pixel in the canvas, compute its corresponding location in the input image using the inverse homography mapping</li>
+            <li>If the mapped location is within the source bounds, sample the source by the chosen interpolator (nearest or bilinear) and assign it to the canvas</li>
+            <li>Pixels that fail the bounds check remain black. We also record a binary $\alpha$ mask indicating valid samples (1) vs. invalid (0), which will be used for blending in Part A.4.</li>
+          </ol>
+          <h4>Rectification Examples</h4>
+          <p>To verify our implementation and compare the difference between two interpolation methods, three rectification examples are processed and visualized below. It can be observed (if you zoom in) that bilinear interpolation produces smoother results than nearest neighbor interpolation, especially around edges and textures.</p>
+          <figure class="figure-center">
+            <img src="media/output/TYLinLab_rectification.jpeg" alt="TYLinLab" class="zoomable" data-full="media/output/TYLinLab_rectification.jpeg">
+            <img src="media/output/bridge_rectification.jpeg" alt="Bridge" class="zoomable" data-full="media/output/bridge_rectification.jpeg">
+            <img src="media/output/graffiti_rectification.jpeg" alt="Graffiti" class="zoomable" data-full="media/output/graffiti_rectification.jpeg">
+          </figure>
         </section>
 
         <section id="part-A-4">
           <h3><u>A.4: Blend the Image into a Mosaic</u></h3>
-          <p>TBD</p>
+          <p>Once we have our warping functions ready, the final step is to warp all images with respect to a common reference view, align them properly on a large canvas, and then blend them together to create a seamless mosaic. The implementation details are as follows:</p>
+          <ol>
+            <li>Choose one image as the reference view $I_r$, and compute the homography from each of the other images $I_i$ to $I_r$, denoted as $\mathbf{H}_{i \to r}$. Since I only have correspondences of adjacent image pairs, for non-adjacent image mapping, the homography can be computed by chaining the homographies of the adjacent pairs, e.g., $\mathbf{H}_{1 \to 3} = \mathbf{H}_{2 \to 3} \mathbf{H}_{1 \to 2}$. For whose mapping from right to left, the homography is simply the inverse of the left to right mapping, e.g., $\mathbf{H}_{5 \to 3} = \mathbf{H}_{3 \to 5}^{-1} = (\mathbf{H}_{4 \to 5} \mathbf{H}_{3 \to 4})^{-1}$.</li>
+            <li>Create a giant canvas that can fit all warped images, and initialize it to zeros (black).</li>
+            <li>Also initialize a canvas-sized $\alpha_{\text{canvas}}$ mask to record the mosaic region and capture the overlapping regions to the new composite image at each step for blending later.</li>
+            <li>Grow the mosaic from left to right sequentially:
+              <ol>
+                <li>For each image $I_i$, warp it to the reference view $I_r$ using the homography $\mathbf{H}_{i\to r}$ with the warping function implemented in A.3, also take its $\alpha_i$ mask</li>
+                <li>Treat each warped image as a patch, using the corresponding offsets (recorded in previous steps) to map it (together with its $\alpha_i$ mask) to the correct location on the giant canvas, i.e., its global coordinates.</li>
+                <li>Before blending, use the current $\alpha_{\text{canvas}}$ and the new $\alpha_i$ to detect the overlapping region, i.e., add the new $\alpha_i$ to the existing $\alpha_{\text{canvas}}$ and find where the sum is $2$.</li>
+                <li>Blend the images via weighted averaging in the overlapping region, three weights were implemented, including overlay (directly overlay the new warped image over existing mosaic, without averaging in overlapping regions), equal weights ($0.5$ weights of mosaic and new image in the overlapping region), and feathering weights (the distribution of distance to the mask border calculated by <code>scipy.ndimage.distance_transform_edt</code>)</li>
+              </ol>
+            </li>
+          </ol>
+          <h4>Mosaic Examples and Comparison of Three Alpha Weights</h4>
+          <p>Three mosaics are created and visualized here, whose source image sets are the ones introduced in A.1, including (1) T.Y.Lin Lab, (2) Campus Scenery (left), and (3) Campus Scenery (right). To show the difference between the three implemented alpha averaging weights, the T.Y.Lin Lab mosaic with each of them is presented. It is apparent that the feathering weights perform the best among the three modes, while the simple overlay produces noticeable seams, and the equal weights give wedge-like artifacts. Thanks to our efforts when taking the photos (A.1), feathering can already provide satisfactory mosaics, so there is no need to further apply other blending techniques like the Laplacian pyramid.</p>
+          <figure class="figure-center">
+            <img src="media/output/TYLinLab_mosaic.jpeg" alt="TYLinLab Mosaic" class="zoomable" data-full="media/output/TYLinLab_mosaic.jpeg">
+            <img src="media/output/campus_left_mosaic.jpeg" alt="Campus Scenery Mosaic (Left)" class="zoomable" data-full="media/output/campus_left_mosaic.jpeg">
+            <img src="media/output/campus_right_mosaic.jpeg" alt="Campus Scenery Mosaic (Right)" class="zoomable" data-full="media/output/campus_right_mosaic.jpeg">
         </section>
 
         <section id="part-A-5">
           <h3><u>A.5: Bells & Whistles: Cylindrical Warping</u></h3>
-          <p>Mosaics created by homography warping woks fine when the assumption of planar scene holds and the field of view is not too wide, however, when we have very wide field of view, e.g., over $180^{\circ}$, such mosaics usually suffer from severe distortions. To achieve better representation of ultra-wide mosaics, here we implement cylindrical projection to warp images onto a cylinder surface centered at the COP with unit radius.
-
-          <p>I follow [this open source lecture slides](https://www.csie.ntu.edu.tw/~cyy/courses/vfx/12spring/lectures/handouts/lec04_stitching_4up.pdf) for my notation, derivation, and implementation. Suppose we have a pinhole camera with focal length $f$, for any 3D point in the word coordinate system $(X,Y,Z)$, its projection on the image plane is recorded as $(x,y)$ with central point at $(x_c, y_c)$ (typically the center of the image). Therefore, what we have now is the photographs of the 3D world, i.e., multiple image planes with the same COP and $f$, then, what we want is to warp those image planes $I$ with points $(x,y)$ onto a cylindrical surface parameterized by $(\theta, h)$, and then unroll the cylinder to a flat plane $\tilde{I}$ with coordinates $(\tilde{x}, \tilde{y})$.</p>
-
+          <p>Mosaics created by homography warping work fine when the assumption of a planar scene holds and the field of view is not too wide; however, when we have a very wide field of view, e.g., over $180^{\circ}$, such mosaics usually suffer from severe distortions. To achieve better representation of ultra-wide mosaics, here we implement cylindrical projection to warp images onto a cylinder surface centered at the COP with radius of focal length $f$, and then unroll the cylinder to a flat plane for stitching.</p>
+          <p>I follow [this open source lecture slides](https://www.csie.ntu.edu.tw/~cyy/courses/vfx/12spring/lectures/handouts/lec04_stitching_4up.pdf) for my notation, derivation, and implementation. Suppose we have a pinhole camera with focal length $f$, for any 3D point in the world coordinate system $(X ,Y, Z)$, its projection on the image plane is recorded as $(x,y)$ with central point at $(x_c, y_c)$ (typically the center of the image). Therefore, what we have now is the photographs of the 3D world, i.e., multiple image planes with the same COP and $f$, then, what we want is to warp those image planes $I$ with points $(x,y)$ onto a cylindrical surface parameterized by $(\theta, h)$, and then unroll the cylinder to a flat plane $\tilde{I}$ with coordinates $(\tilde{x}, \tilde{y})$.</p>
           <h4>Forward Mapping</h4>
           <p>The forward mapping involves two steps:</p>
           <ol>
@@ -190,7 +244,7 @@
               $$
               \tilde{x} = f \theta + \tilde{x}_c, \quad \tilde{y} = f h + \tilde{y}_c,
               $$
-              where $(\tilde{x}_c, \tilde{y}_c)$ is the central point of the unrolled cylinder image.</li>
+              where $(\tilde{x}_c, \tilde{y}_c)$ is the central point of the unrolled cylinder image, which can simply be set to the same as $(x_c, y_c)$.</li>
           </ol>
           <h4>Inverse Mapping</h4>
           <p>For image warping, we need the inverse mapping, i.e., $(\tilde{x}, \tilde{y}) \to (x,y)$, which can be derived by reversing the above two steps:</p>
@@ -204,6 +258,20 @@
               x = f \tan\theta + x_c, \quad y = f \frac{h}{\cos\theta} + y_c.
               $$</li>
           </ol>
+          <p>Since we are projecting images onto the same cylinder surface and there is no more reference plane like previously, assume our raw images are truly taken from the same COP (at least I tried my best to follow the rules in A.1), then the alignment of cylindrically warped images can be simply done by a translation matrix rather than a full homography anymore.</p>
+          <p>With aforementioned knowledge in mind, the implementation of cylindrical warping and stitching is simply adding few more steps to the previous planar warping and stitching pipeline:</p>
+          <ol>
+            <li>Define a focal length $f$ for cylindrical projection, then warp all images cylindrically using the inverse mapping derived above, which are now our "new planar images" in the unrolled cylinder coordinate system, i.e., get $\tilde{I}$ from $I$.</li>
+            <li>With the same cylindrical warping, get the new correspondences in the unrolled cylinder coordinate system, i.e., get $(\tilde{x}, \tilde{y})$ from $(x,y)$.</li>
+            <li>Instead of recovering homographies between original planar images, here we compute the translation matrices $T_{i \to r}$ in the unrolled cylinder coordinate system, i.e., finding the relative offsets of each $\tilde{I}_i$ to the reference image $\tilde{I}_r$ in the unrolled cylinder plane.</li>
+            <li>Then use the same approach as A.4 to put all cylindrically warped images $\tilde{I}_i$ onto a giant canvas, using the translation matrices $T_{i \to r}$ to align them properly, and blend them together.</li>
+          </ol>
+        <h4>Cylindrical Mosaic Examples</h4>
+          <p>With all $5$ photos of the T.Y.Lin Lab and $12$ photos of the campus scenery, the cylindrical mosaics are created and visualized below (interpolated with bilinear method and blended with feathering technique). Compared to the planar mosaics created in A.4, it can be observed that the cylindrical mosaics have a much wider field of view (over $180^{\circ}$ for the campus scenery) and significantly reduced distortions.</p>
+          <figure class="figure-center">
+            <img src="media/output/TYLinLab_cylindrical_mosaic.jpeg" alt="TYLinLab Cylindrical Mosaic" class="zoomable" data-full="media/output/TYLinLab_cylindrical_mosaic.jpeg">
+            <img src="media/output/campus_cylindrical_mosaic.jpeg" alt="Campus Scenery Cylindrical Mosaic" class="zoomable" data-full="media/output/campus_cylindrical_mosaic.jpeg">
+          </figure>
         </section>
       </section>
       <hr>
