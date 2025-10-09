@@ -51,7 +51,7 @@
             <li><a href="#part-A-2">A.2: Recover Homographies</a></li>
             <li><a href="#part-A-3">A.3: Warp the Images</a></li>
             <li><a href="#part-A-4">A.4: Blend Images Into a Mosaic</a></li>
-            <li><a href="#part-A-5">A.5: B &amp; W: Cylindrical Warping</a></li>
+            <li><a href="#part-A-5">A.5: B &amp; W: Cylindrical Warping & Mosaicing</a></li>
           </ul>
         </li>
         <li>
@@ -230,9 +230,9 @@
         </section>
 
         <section id="part-A-5">
-          <h3><u>A.5: Bells & Whistles: Cylindrical Warping</u></h3>
+          <h3><u>A.5: Bells & Whistles: Cylindrical Warping and Mosiacing</u></h3>
           <p>Mosaics created by homography warping work fine when the assumption of a planar scene holds and the field of view is not too wide; however, when we have a very wide field of view, e.g., over $180^{\circ}$, such mosaics usually suffer from severe distortions. To achieve better representation of ultra-wide mosaics, here we implement cylindrical projection to warp images onto a cylinder surface centered at the COP with radius of focal length $f$, and then unroll the cylinder to a flat plane for stitching.</p>
-          <p>I follow [this open source lecture slides](https://www.csie.ntu.edu.tw/~cyy/courses/vfx/12spring/lectures/handouts/lec04_stitching_4up.pdf) for my notation, derivation, and implementation. Suppose we have a pinhole camera with focal length $f$, for any 3D point in the world coordinate system $(X ,Y, Z)$, its projection on the image plane is recorded as $(x,y)$ with central point at $(x_c, y_c)$ (typically the center of the image). Therefore, what we have now is the photographs of the 3D world, i.e., multiple image planes with the same COP and $f$, then, what we want is to warp those image planes $I$ with points $(x,y)$ onto a cylindrical surface parameterized by $(\theta, h)$, and then unroll the cylinder to a flat plane $\tilde{I}$ with coordinates $(\tilde{x}, \tilde{y})$.</p>
+          <p>I follow <a href="https://www.csie.ntu.edu.tw/~cyy/courses/vfx/12spring/lectures/handouts/lec04_stitching_4up.pdf">this open source lecture slides</a> for my notation, derivation, and implementation. Suppose we have a pinhole camera with focal length $f$, for any 3D point in the world coordinate system $(X ,Y, Z)$, its projection on the image plane is recorded as $(x,y)$ with central point at $(x_c, y_c)$ (typically the center of the image). Therefore, what we have now is the photographs of the 3D world, i.e., multiple image planes with the same COP and $f$, then, what we want is to warp those image planes $I$ with points $(x,y)$ onto a cylindrical surface parameterized by $(\theta, h)$, and then unroll the cylinder to a flat plane $\tilde{I}$ with coordinates $(\tilde{x}, \tilde{y})$.</p>
           <h4>Forward Mapping</h4>
           <p>The forward mapping involves two steps:</p>
           <ol>
