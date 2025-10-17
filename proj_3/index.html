@@ -85,13 +85,13 @@
         <div class="discussion-card">
           <h3>Highlights</h3>
           <ul>
-            <li>Recovering homographies from point correspondences</li>
+            <li>Recovering homographies from correspondences</li>
             <li>Image warping with inverse mapping and resampling</li>
             <li>Image stitching and blending</li>
             <li>Cylindrical warping</li>
-            <li>Automatic corner feature detection and matching</li>
-            <li>RANSAC for robust homography estimation</li>
-            <li>Automatic panorama recognition</li>
+            <li>Automatic corner detection, description, and matching</li>
+            <li>RANSAC for Robust Homography Recovery</li>
+            <li>Multi-Scale Processing</li>
           </ul>
         </div>
       </section>
@@ -353,7 +353,7 @@
             <img src="media/output/campus_ransac_inliers_outliers.jpeg" alt="Campus Scenery RANSAC Inliers and Outliers" class="zoomable" data-full="media/output/campus_ransac_inliers_outliers.jpeg">
           </figure>
 
-          <h4>Mosaics with Single-scale Auto Correspondences</h4>
+          <h4>Mosaics with Single-scale Automatic Stitching</h4>
           <p>With all aforementioned techniques, the homographies recovered from the inliers can be utilized to create mosaics with the same pipeline introduced in Part A. The same set of images as used in the previous manually stitched mosaics is used here for comparison purposes. Compared with the manually stitched mosaics (the first one of each pair), the automatically stitched mosaics (the second one of each pair) demonstrate almost the same visual quality, implying the effectiveness of implemented techniques.</p>
           <figure class="figure-center">
             <img src="media/output/TYLinLab_mosaic_feathering.jpeg" alt="TYLinLab Mosaic Single-scale Manually Stitched" class="zoomable" data-full="media/output/TYLinLab_mosaic_feathering.jpeg">
@@ -368,8 +368,40 @@
         </section>
 
         <section id="part-B-5">
-          <h3><u>B.5: Bells & Whistles: Multiscale Processing</u></h3>
-          <p>The auto stitching pipeline implemented above works reasonably well after carefully tuning those hyperparameters. Here, we further improve its robustness and stitching quality by extending to a multiscale framework. The main idea behind multiscale processing is that the Harris detector is <b>non-invariant to image scale</b>, which means, we are potentially missing some potential good corners. The implementation of such multiscale processing is straightforward built upon the existing single-scale version, my implementation details are as follows:</p>
+          <h3><u>B.5: Bells & Whistles: Multi-Scale Processing</u></h3>
+          <p>The auto stitching pipeline implemented above works reasonably well after carefully tuning those hyperparameters. Here, we further improve its robustness and stitching quality by extending to a multi-scale framework. The main idea behind multi-scale processing is that the Harris detector is <b>non-invariant to image scale</b>, which means we are potentially missing some good corners. The implementation of such multi-scale processing is straightforward, built upon the existing single-scale version. My implementation details are as follows:</p>
+
+          <h4><u>Multi-Scale Harris Corner Detection</u></h4>
+          <ol>
+            <li>Create a Gaussian pyramid for the input image</li>
+            <li>Apply the Harris corner detection (with thresholding and ANMS) at each layer $l$ to get corners at different scales, record local layer coordinates, say $\mathbf{x}_{i}^{(l)} = (x_l, y_l)$ is the coordinate of corner $i$ detected at layer $l$ in that layer</li>
+            <li>Collect all corners from different layers, then map all corners back to the original image coordinate system (the $l_0$ layer), therefore, $\mathbf{x}_{i}^{(0)} = (2^l x_l, 2^l y_l)$ is the coordinate of corner $i$ from layer $l$ at the $l_0$ layer</li>
+            <li>Apply ANMS on all collected corners in step $3$ in the $l_0$ coordinate system, keeping the top $n_{ip}$ corners as final output. At this step, each corner contains the information of: (a) which layer $l$ it is detected from, (b) its coordinate in its local layer $\mathbf{x}_{i}^{(l)} = (x_l, y_l)$, (c) its coordinate in the $l_0$ image $\mathbf{x}_{i}^{(0)} = (2^l x_l, 2^l y_l)$</li>
+          </ol>
+
+          <p>The comparison between single-scale and multi-scale corner detection is shown below; one can find that most of the corners are the same across them, which implies why the single-scale version can work well, as demonstrated before. Meanwhile, there are some differences between single- and multi-scale versions, meaning that the multi-scale version can potentially detect more corners at different scales, giving better results.</p>
+          <figure class="figure-center">
+            <img src="media/output/campus_harris_anms_pyramid.jpeg" alt="Campus Scenery Multi-Scale Harris Corner Detection and ANMS" class="zoomable" data-full="media/output/campus_harris_anms_pyramid.jpeg">
+          </figure>
+
+          <h4><u>Multi-Scale Feature Descriptor Extraction</u></h4>
+          <p>Extending the feature descriptor to multi-scale is simple, since we recorded which layer each corner is detected from and its local layer coordinate $\mathbf{x}_{i}^{(l)} = (x_l, y_l)$ in the multi-scale Harris corner detection step, here we can simply apply the single-scale feature descriptor of each corner at its corresponding layer and local coordinate. Then, we again have $8 \times 8$ normalized patches as feature descriptors for all corners across multiple scales.</p>
+
+          <p>The following figure illustrates the patches extracted from different layers and mapped back to the original image coordinate system. Corners from higher layers have a larger field of view to get their features.</p>
+          <figure class="figure-center">
+            <img src="media/output/campus_feature_description_patch_pyramid.jpeg" alt="Campus Scenery Multi-Scale Feature Description Patch Pyramid" class="zoomable" data-full="media/output/campus_feature_description_patch_pyramid.jpeg">
+          </figure>
+          
+          <h4><u>Mosaics with Single-Scale Automatic Stitching</u></h4>
+          <p>The rest steps to create the automatically stitched mosaics with multi-scale processing are exactly the same as the single-scale version. The mosaics of the same sets of images created by multi-scale processing are shown below. It can be observed that they are visually similar to our previous manually stitched mosaics, as well as single-scale automatically stitched mosaics (at least I can not distinguish them and say which is better), meaning that our system is well developed and robust for such three sets of photos at hand.</p>
+          
+          <figure class="figure-center">
+            <img src="media/output/TYLinLab_mosaic_auto_pyramid.jpeg" alt="TYLinLab Mosaic Multi-scale Automatically Stitched" class="zoomable" data-full="media/output/TYLinLab_mosaic_auto_pyramid.jpeg">
+
+            <img src="media/output/campus_left_mosaic_auto_pyramid.jpeg" alt="Campus Scenery Mosaic (Left) Multi-scale Automatically Stitched" class="zoomable" data-full="media/output/campus_left_mosaic_auto_pyramid.jpeg">
+
+            <img src="media/output/campus_right_mosaic_auto_pyramid.jpeg" alt="Campus Scenery Mosaic (Right) Multi-scale Automatically Stitched" class="zoomable" data-full="media/output/campus_right_mosaic_auto_pyramid.jpeg">
+          </figure>
         </section>
       </section>
       <hr>
