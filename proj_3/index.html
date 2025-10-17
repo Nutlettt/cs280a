@@ -274,6 +274,104 @@
           </figure>
         </section>
       </section>
+
+      <section id="part-B">
+        <h2><u>Part B: Feature Matching for Auto Stitching</u></h2>
+        <p>With the stitching system implemented in Part A that based on manually crafted correspondences, here in Part B we will automate the whole stitching pipeline by implementing feature detectors, descriptors, and matching algorithms to extract and match the correspondences automatically. The methodology implemented in this section mainly follows the paper <a href="https://cal-cs180.github.io/fa25/hw/proj3/Papers/MOPS.pdf">“Multi-Image Matching using Multi-Scale Oriented Patches” by Brown et al.</a></p>
+
+        <section id="part-B-1">
+          <h3><u>B.1: Harris Corner Detection</u></h3>
+          <p>As what we did in the manual stitching, the first step is to detect some interest points in each image such that we can find correspondences in the following steps. One of the most widely used type of point is the "corner", which is expected to have large intensity variations in all directions, therefore, it is more likely to be distinguishable from other points.</p>
+
+          <p>Here we implement the <a href="https://en.wikipedia.org/wiki/Harris_corner_detector">Harris Corner Detector</a> for detecting our candidate interest points, which are further thresholded and suppressed for reasonable quantity and spatial distribution. The Harris matrix at Gaussian pyramid layer $l$ at pixel $(x,y)$ is computed based on its image gradients $(I_x, I_y)$ in a Gaussian window $W$ (through convolving a filter $g_{\sigma_i}$ on gradient) around it:
+            $$
+            \mathbf{H}_l(x,y) = \sum_{(x,y)\in W}\begin{bmatrix}
+            I_x^2 & I_x I_y \\
+            I_x I_y & I_y^2
+            \end{bmatrix} 
+            = \nabla_{\sigma_d}P_l(x,y) \nabla_{\sigma_d}P_l(x,y)^{\top} \star g_{\sigma_i}(x,y),
+            $$
+          where $\sigma_i$ and $\sigma_d$ are the integration and gradient scales, respectively. Then, the corner strength function that quantifies how "corner-like" a pixel is defined by the harmonic mean of the eigenvalues of $\mathbf{H}$:
+            $$ f_{HM}(x,y) = \frac{\det{\mathbf{H}_l(x,y)}}{\text{tr}{\mathbf{H}_l(x,y)}} = \frac{\lambda_1 \lambda_2}{\lambda_1 + \lambda_2}, $$
+          which will return high values when both eigenvalues are large, i.e., large intensity variations in both directions (implying a corner), while gives low values when at least one of the $\lambda$ is small (implying an edge or flat region). Additionally, the interested points are those local maxima of $f_{HM}$ in a small neighborhood (e.g., $5 \times 5$ window) and above a certain threshold (e.g., $0.01\max(f_{HM})$).</p>
+          
+          <h3><u>Adaptive Non-Maximal Suppression (ANMS)</u></h3>
+          <p>The interested corners from Harris, even after thresholding and local maximal suppression, may still be too many and unevenly distributed, yielding unnecessary computational burden and poor stitching performance. Therefore, here we implement the Adaptive Non-Maximal Suppression (ANMS) introduced in the original paper.</p>
+
+          <p>Mathematically speaking, we have the interest point set $\mathcal{I}$ after Harris, whose elements all represent strong corners, and we want to get a subset of $\mathcal{I}$ such that the points are well-distributed and restricted to a certain affordable number $n_{ip}$. To achieve this, for each point $\mathbf{x}_i \in \mathcal{I}$ we compute its suppression radius $r_i$, defined as the "minimum distance to its nearest significantly stronger neighbor $j$", where the so-called "significantly stronger" is defined as $f_{HM}(i) < c_{\text{robust}} \cdot f_{HM}(j)$ (simply setting $c_{\text{robust}} = 1$ may harm robustness, therefore, we set $c_{\text{robust}} = 0.9$ as suggested in the paper). Therefore, the $r_i$ can be expressed as:
+            $$
+            r_i = \min_{\mathbf{x}_j \in \mathcal{I}} |\mathbf{x}_i - \mathbf{x}_j| \quad \text{s.t.} \quad f_{HM}(i) < c_{\text{robust}} \cdot f_{HM}(j).
+            $$
+          Once we have $r_i$ for all points, the desired subset can be simply obtained by sorting $r_i$ in descending order and keeping the top $n_{ip}$ points. The corner points distribution before and after ANMS are visualized below, which clearly shows that ANMS helps to select well-distributed corners across the whole image.</p>
+
+          <h4>Examples of Harris Corner Detection before and after ANMS</h4>
+          <p>One example of single-scaled Harris corner detection before and after ANMS is shown below. It can be observed that with only thresholding and selecting local maxima, the detected corners are quite dense around some texture-rich regions, while after ANMS, they are much better evenly distributed spatially.</p>
+          <figure class="figure-center">
+            <img src="media/output/campus_harris_anms.jpeg" alt="Campus Scenery Harris ANMS" class="zoomable" data-full="media/output/campus_harris_anms.jpeg">
+          </figure>
+        </section>
+
+        <section id="part-B-2">
+          <h3><u>B.2: Feature Descriptor Extraction</u></h3>
+          <p>Once we have interested points ready, the next is to extract descriptions of local image structure, which will be further used for matching. To make the descriptions robust to subtle changes in exact feature location and illumination, here we implement the one used in the original MOPS paper with simplification. Specifically, we extract axis-aligned $8 \times 8$ patches (without rotation) for each corner that is downsampled from a $40 \times 40$ patch around the corner with equal spacing $s=5$, which is low-pass filtered before downsampling for anti-aliasing.</p>
+
+          <p>The implementation in the MOPS paper was approximated by directly sampling $8 \times 8$ patch one per pixel in the higher pyramid level, which is equivalent to downsampling the $40 \times 40$ patch by a factor of $5$ with blurring. Similarly, here we approximate this sampling by directly resizing the $40 \times 40$ patch to $8 \times 8$ using <code>cv2.resize</code> with <code>INTER_AREA</code> interpolation, which is approximately equivalent to the blurring and downsampling process. Finally, the $8 \times 8$ patches are normalized to zero mean and unit variance.</p>
+
+          <h4>Examples of Extracted Feature Descriptors</h4>
+          <p>Some patches ($40 \times 40$) and their corresponding $8 \times 8$ feature descriptors are shown below. One can find that the feature descriptors are able to capture the local image structure around each corner effectively without being affected by aliasing artifacts.</p>
+          <figure class="figure-center">
+            <img src="media/output/campus_feature_description_patch.jpeg" alt="Campus Scenery Feature Description Patch" class="zoomable" data-full="media/output/campus_feature_description_patch.jpeg">
+          </figure>
+        </section>
+
+        <section id="part-B-3">
+          <h3><u>B.3: Feature Matching</u></h3>
+          <p>Given the feature descriptions of a pair of images, here we implement a feature matching algorithm to find correspondences between them, hence, for any patch in one image, denoted as $I(\mathbf{x})$, we want to find its best match in the other image, denoted as $I'(\mathbf{x}')$. The matching error between two patches can be simply calculated as the squared Euclidean distance between their feature descriptors since they are normalized. Recall that the corresponding patches only appear in the overlapping region of two images, and correct matches are vital for successful stitching because least squares used for Homography recovery is very sensitive to outliers; thus, we need to implement a set of outlier rejection strategies to ensure the correctness of matches. Here we first calculate the matching errors between all pairs of patches from two images, and then roughly reject most of the outliers by applying the Lowe's strategy: instead of working on the nearest neighbor ($e_{1-NN}$), thresholding the ratio between the top two nearest neighbors ($e_{1-NN}/e_{2-NN} < t$) under the assumption that the correct matches should always have substantially lower error than incorrect matches.</p>
+
+          <h4>Examples of Feature Matching Results</h4>
+          <p>Some matching results are shown below. It is obvious that most of the points that do not have a correct match (e.g., those in non-overlapped regions, or corners not detected in the other image) are effectively removed thanks to Lowe's strategy. However, unless the Lowe's threshold is set properly, there may still be some outliers present, which can be further removed by applying RANSAC later.</p>
+          <figure class="figure-center">
+            <img src="media/output/campus_feature_matching.jpeg" alt="Campus Scenery Feature Matching" class="zoomable" data-full="media/output/campus_feature_matching.jpeg">
+          </figure>
+        </section>
+
+        <section id="part-B-4">
+          <h3><u>B.4: RANSAC for Robust Homography</u></h3>
+          <p>Lowe's strategy rejects most of the outliers, however, there may still be some outliers left that can significantly harm the homography recovery, hence, here we implement the <a href="https://en.wikipedia.org/wiki/Random_sample_consensus">Random Sample Consensus (RANSAC)</a> algorithm to further robustly reject all outliers left. The RANSAC algorithm follows an iterative process:</p>
+          <ol>
+            <li>Randomly select the minimum number of points for estimating the model ($4$ for homography)</li>
+            <li>Fit the model with the selected points, i.e., compute the homography</li>
+            <li>Compute inliers by thresholding the error of all points with respect to the fitted model, here is $\|\mathbf{x}' - \mathbf{Hx}\| < \epsilon$</li>
+            <li>Repeat the above 3 steps for $N$ iterations, and keep the most inliers</li>
+            <li>Refit the model with all inliers for the final result</li>
+          </ol>
+
+          <p>After applying RANSAC, we can obtain a robust homography matrix, which are further utilized for image stitching.</p>
+          <h4>Examples of RANSAC Results</h4>
+          <p>The matched correspondences shown in B.3 are further refined by RANSAC and shown below. Apparently, those inliers are more consistent and reliable for estimating the homography, while all outliers are effectively kicked out.</p>
+          <figure class="figure-center">
+            <img src="media/output/campus_ransac_inliers_outliers.jpeg" alt="Campus Scenery RANSAC Inliers and Outliers" class="zoomable" data-full="media/output/campus_ransac_inliers_outliers.jpeg">
+          </figure>
+
+          <h4>Mosaics with Single-scale Auto Correspondences</h4>
+          <p>With all aforementioned techniques, the homographies recovered from the inliers can be utilized to create mosaics with the same pipeline introduced in Part A. The same set of images as used in the previous manually stitched mosaics is used here for comparison purposes. Compared with the manually stitched mosaics (the first one of each pair), the automatically stitched mosaics (the second one of each pair) demonstrate almost the same visual quality, implying the effectiveness of implemented techniques.</p>
+          <figure class="figure-center">
+            <img src="media/output/TYLinLab_mosaic_feathering.jpeg" alt="TYLinLab Mosaic Single-scale Manually Stitched" class="zoomable" data-full="media/output/TYLinLab_mosaic_feathering.jpeg">
+            <img src="media/output/TYLinLab_mosaic_auto.jpeg" alt="TYLinLab Mosaic Single-scale Automatically Stitched" class="zoomable" data-full="media/output/TYLinLab_mosaic_auto.jpeg">
+            
+            <img src="media/output/campus_left_mosaic.jpeg" alt="Campus Scenery Mosaic (Left)" class="zoomable" data-full="media/output/campus_left_mosaic.jpeg">
+            <img src="media/output/campus_left_mosaic_auto.jpeg" alt="Campus Scenery Mosaic (Left) Single-scale Automatically Stitched" class="zoomable" data-full="media/output/campus_left_mosaic_auto.jpeg">
+
+            <img src="media/output/campus_right_mosaic.jpeg" alt="Campus Scenery Mosaic (Right)" class="zoomable" data-full="media/output/campus_right_mosaic.jpeg">
+            <img src="media/output/campus_right_mosaic_auto.jpeg" alt="Campus Scenery Mosaic (Right) Single-scale Automatically Stitched" class="zoomable" data-full="media/output/campus_right_mosaic_auto.jpeg">
+          </figure>
+        </section>
+
+        <section id="part-B-5">
+          <h3><u>B.5: Bells & Whistles: Multiscale Processing</u></h3>
+          <p>The auto stitching pipeline implemented above works reasonably well after carefully tuning those hyperparameters. Here, we further improve its robustness and stitching quality by extending to a multiscale framework. The main idea behind multiscale processing is that the Harris detector is <b>non-invariant to image scale</b>, which means, we are potentially missing some potential good corners. The implementation of such multiscale processing is straightforward built upon the existing single-scale version, my implementation details are as follows:</p>
+        </section>
+      </section>
       <hr>
 
       <footer>
