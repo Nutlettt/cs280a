@@ -183,7 +183,7 @@
         which applies to each dimension of the input independently, hence, expanding the input dimension from $x \in \mathbb{R}^d$ to $d \times (2L + 1)$.</p>
 
         <p><strong>MLP architecture</strong>. The MLP architecture for this part follows the suggested structure from the problem statement. The later parts may change some hyperparameters here and there, but all of them mainly follow this structure as a foundation below:</p>
-        <figure class="figure-center shrink-70">
+        <figure class="figure-center shrink-50">
           <img src="media/part_1/mlp_img.jpg" alt="MLP Architecture for 2D NeRF" class="zoomable" data-full="media/part_1/mlp_img.jpg">
         </figure>
         <ol>
@@ -221,7 +221,7 @@
 
         <h4><u>Fox: Comparison of Different Configurations</u></h4>
         <p>From the training logs shown below, it can be observed that increasing both the layer width (<code>hidden_dim</code>) and the maximum frequency level (<code>L</code>) leads to better fitting quality, as indicated by higher PSNR values. It makes sense because a wider network has a larger capacity to learn complex mappings, and a higher frequency level allows the model to capture finer details in the image.</p>
-        <figure class="figure-center">
+        <figure class="figure-center shrink-80">
           <img src="media/part_1/training_psnr_curve_fox.png" alt="Training PSNR Curve for Fox Image" class="zoomable" data-full="media/part_1/training_psnr_curve_fox.png">
         </figure>
 
@@ -235,6 +235,8 @@
         <p>Here let's try to apply the same neural field fitting pipeline to reconstruct my own image. The model and training configurations are the same as the best-performing one in the ablation study of fox image above. The reconstructed image is one of our resized labubu photos taken in Part 0.</p>
         <figure class="figure-center">
           <img src="media/part_1/reconstructed_labubu_hidden_256_L_10.png" alt="Reconstructed Image of Labubu" class="zoomable" data-full="media/part_1/reconstructed_labubu_hidden_256_L_10.png">
+        </figure>
+        <figure class="figure-center shrink-80">
           <img src="media/part_1/training_psnr_curve_labubu.png" alt="Training PSNR Curve for Labubu Image" class="zoomable" data-full="media/part_1/training_psnr_curve_labubu.png">
         </figure>
       </section>
@@ -516,6 +518,13 @@
               <li>Highest frequency level for direction PE: 4</li>
           </ul>
           <p>The training process by plotting the predicted images across iterations, training PSNR curve on train and validation sets, and the rendered test set video, are as follows:</p>
+          <figure class="figure-center shrink-50">
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/1000_iter/test_lego.gif"
+                  data-full="media/part_2/lego/1000_iter/test_lego.gif"
+                  alt="test video">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Test video</p>
+          </figure>
           <figure class="gallery gallery-wide">
             <div>
               <img class="responsive zoomable"
@@ -552,21 +561,21 @@
                   alt="iteration 1k">
               <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 1k</p>
             </div>
-            <div>
-              <img class="responsive zoomable"
-                  src="media/part_2/lego/1000_iter/test_lego.gif"
-                  data-full="media/part_2/lego/1000_iter/test_lego.gif"
-                  alt="test video">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Test video</p>
-            </div>
           </figure>
-          <figure class="figure-center">
+          <figure class="figure-center shrink-80">
             <img src="media/part_2/lego/1000_iter/training_val_log.png" alt="Training PSNR Curve for Lego NeRF" class="zoomable" data-full="media/part_2/lego/1000_iter/training_val_log.png">
           </figure>
 
           <h4><u>Lego NeRF with more iterations</u></h4>
           <p>It is apparent that from the training log of 1k iterations, the model is still not fully converged. Here we increase the training iterations and the number of points to see how the model is improved. Let's keep all other hyperparameters the same as before, except increasing the number of training iterations to 10000.</p>
           <p>The training process by plotting the predicted images across iterations, training PSNR curve on train and validation sets, and the rendered test set video, are as follows:</p>
+          <figure class="figure-center shrink-50">
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/more_iter/test_lego.gif"
+                  data-full="media/part_2/lego/more_iter/test_lego.gif"
+                  alt="test video">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Test video</p>
+          </figure>
           <figure class="gallery gallery-wide">
             <div>
               <img class="responsive zoomable"
@@ -603,15 +612,8 @@
                   alt="iteration 10k">
               <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 10k</p>
             </div>
-            <div>
-              <img class="responsive zoomable"
-                  src="media/part_2/lego/more_iter/test_lego.gif"
-                  data-full="media/part_2/lego/more_iter/test_lego.gif"
-                  alt="test video">
-              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Test video</p>
-            </div>
           </figure>
-          <figure class="figure-center">
+          <figure class="figure-center shrink-80">
             <img src="media/part_2/lego/more_iter/training_val_log.png" alt="Training PSNR Curve for Lego NeRF" class="zoomable" data-full="media/part_2/lego/more_iter/training_val_log.png">
           </figure>
           <h4><u>Observations</u></h4>
@@ -683,7 +685,7 @@
             </div>
           </figure>
 
-          <figure class="figure-center">
+          <figure class="figure-center shrink-80">
             <img src="media/part_2/labubu/training_val_log.png" alt="Training PSNR Curve for Labubu NeRF" class="zoomable" data-full="media/part_2/labubu/training_val_log.png">
           </figure>
         </section>
