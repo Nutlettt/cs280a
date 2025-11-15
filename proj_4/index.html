@@ -286,7 +286,7 @@
               <li>Convert the transformed points back to Euclidean coordinates using <code>homoge_back</code>, obtaining the final world-space coordinates.</li>
           </ol>
 
-          <p><strong>Pixel to Camera Coordinate Conversion</strong>. Consider a pinhole camera with focal length $(f_x, f_y)$ and principal point $(o_x, o_y)$ where $o_x = \text{img\_width} / 2$ and $o_y = \text{img\_height} / 2$. The intrinsic matrix $\mathbf{K}$ of this camera can be represented as:
+          <p><strong>Pixel to Camera Coordinate Conversion</strong>. Consider a pinhole camera with focal length $(f_x, f_y)$ and principal point $(o_x, o_y)$ where $o_x = W / 2$ and $o_y = H / 2$. The intrinsic matrix $\mathbf{K}$ of this camera can be represented as:
           $$
           \mathbf{K} =
           \begin{bmatrix}
