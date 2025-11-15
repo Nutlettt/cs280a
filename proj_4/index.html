@@ -77,9 +77,9 @@
         <h1>Neural Radiance Field (NeRF)</h1>
       </header>
 
-      <div class="intro-image-row">
-        <img src="media/part_2/labubu/labubu.gif" alt="Labubu" class="intro-img-pair">
-      </div>
+      <figure class="figure-center shrink-70">
+        <img src="media/part_2/labubu/labubu.gif" alt="Labubu Novel Video" class="zoomable" data-full="media/part_2/labubu/labubu.gif">
+       </figure>
 
       <section id="introduction">
         <h2><u>Introduction</u></h2>
@@ -169,6 +169,7 @@
           <p>Now, with the camera intrinsics and pose estimates, we can undistort our images and create a dataset for training NeRF in the later parts. For the division of training and validation sets, I randomly selected $80\%$ of the valid images for training and the remaining $20\%$ for validation. The undistorted images, along with the camera poses (<code>c2ws</code>) and focal length extracted from the intrinsic matrix, were saved in a <code>.npz</code> file with the same format as the provided synthetic Lego dataset, ensuring compatibility with the NeRF implementation in the subsequent parts.</p>
         </section>
       </section>
+      <hr>
 
       <section id="part-1">
         <h2><u>Part 1: Fit a Neural Field to a 2D Image</u></h2>
@@ -240,6 +241,7 @@
           <img src="media/part_1/training_psnr_curve_labubu.png" alt="Training PSNR Curve for Labubu Image" class="zoomable" data-full="media/part_1/training_psnr_curve_labubu.png">
         </figure>
       </section>
+      <hr>
 
       <section id="part-2">
         <h2><u>Part 2: Fit a Neural Radiance Field from Multi-view Image</u></h2>
@@ -700,12 +702,10 @@
           <p><u>Implementation details</u>: The <code>volrend</code> function already supports rendering depth maps by setting the <code>depth=True</code> flag. During the rendering process, if this flag is set, the function computes the expected depth along each ray using the weights and sampled depths, returning a depth map instead of an RGB image. Another trick to improve the quality of visualized depth maps is to normalize each frame individually to the range of $[0,1]$, in my implementation, I achieve this by <code>frame = np.clip((frame - near)/(far - near), 0, 1)</code> before saving the depth frames as images or videos.</p>
 
           <p>The depth map video of the Lego scene is shown below:</p>
-          
-          <figure class="figure-center shrink-50">
+          <div class="intro-image-row">
+            <img src="media/part_2/lego/more_iter/test_lego.gif" alt="Lego Novel Video" class="zoomable" data-full="media/part_2/lego/more_iter/test_lego.gif">
             <img src="media/part_2/lego/more_iter/test_lego_depth.gif" alt="Lego Depth Map" class="zoomable" data-full="media/part_2/lego/more_iter/test_lego_depth.gif">
-          </figure>
-        </section>
-
+          </div>
       </section>
 
       <hr>
