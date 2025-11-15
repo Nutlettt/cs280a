@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>Project 4: Neural Radiance Field (NeRF)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="proj_4.css">
+  <link id="hljs-theme" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js" defer></script>
+  <script defer>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.hljs) hljs.highlightAll();
+    });
+  </script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$','$$'], ['\\[','\\]']],
+        processEscapes: true
+      },
+      options: {
+        skipHtmlTags: ['script','noscript','style','textarea','pre','code','figure']
+      }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body class="theme-light" data-theme="light">
+  <nav class="top-navbar">
+    <div class="navbar-left">
+      <a class="breadcrumb" href="../index.html">CS280A</a>
+      <span class="breadcrumb-sep"></span>
+      <span class="breadcrumb" aria-current="page">Project 4</span>
+    </div>
+    <div class="navbar-right">
+      <button id="sidebar-toggle" class="top-icon-btn" aria-label="Toggle sidebar" title="Toggle sidebar">☰</button>
+      <button id="theme-toggle" class="top-icon-btn" aria-label="Toggle color theme" title="Toggle color theme">🌓</button>
+    </div>
+  </nav>
+
+  <aside id="sidebar" class="sidebar collapsed">
+    <nav>
+      <ul>
+        <li>
+          <a href="#part-0">Part 0: Camera Calibration and 3D Scanning</a>
+          <ul>
+            <li><a href="#part-0-1">0.1: Calibrating The Camera</a></li>
+            <li><a href="#part-0-2">0.2: Capturing a 3D Object Scan</a></li>
+            <li><a href="#part-0-3">0.3: Estimating Camera Pose</a></li>
+            <li><a href="#part-0-4">0.4: Undistorting images and creating a dataset</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#part-1">Part 1: Fit a Neural Field to a 2D Image</a>
+          <a href="#part-2">Part 2: Fit a Neural Radiance Field from Multi-view Images</a>
+          <ul>
+            <li><a href="#part-2-1">2.1: Create Rays from Cameras</a></li>
+            <li><a href="#part-2-2">2.2: Sampling</a></li>
+            <li><a href="#part-2-3">2.3: Putting the Dataloading All Together</a></li>
+            <li><a href="#part-2-4">2.4: Neural Radiance Field</a></li>
+            <li><a href="#part-2-5">2.5: Volume Rendering</a></li>
+          </ul>
+        </li>
+        <a href="#part-2-6">Part 2.6: Training with our own data</a>
+      </ul>
+    </nav>
+  </aside>
+  <div class="overlay" id="sidebar-overlay" aria-hidden="true"></div>
+
+  <main class="with-sidebar">
+    <div class="main-center">
+      <header>
+        <h1>Neural Radiance Field (NeRF)</h1>
+      </header>
+
+      <div class="intro-image-row">
+        <img src="media/part_2/labubu/labubu.gif" alt="Labubu" class="intro-img-pair">
+      </div>
+
+      <section id="introduction">
+        <h2><u>Introduction</u></h2>
+        <p>This project is all about implementing a Neural Radiance Field (NeRF) for 3D scene reconstruction from multi-view images. We will first calibrate our camera and capture a 3D scan of our own scene, which will serve as our dataset. Before we dive into the implementation of 3D NeRF, we will explore a 2D case first to get ourselves familiar with the key concepts. Then, we will move on to the 3D NeRF implementation, for both the given Lego dataset and our own data.</p>
+      </section>
+      <hr>
+
+      <section id="part-0">
+        <h2><u>Part 0: Camera Calibration and 3D Scanning</u></h2>
+        <p>In this part, we will take a 3D scan of our own object for building a NeRF later. We will use <a href="https://cs-courses.mines.edu/csci507/schedule/24/ArUco.pdf">ArUco tags</a> to calibrate our camera and then estimate the pose of each image after undistorting them. The calibration intrinsics and estimated extrinsics, together with the undistorted images, will be saved as a dataset for training our NeRF later.</p>
+        <section id="part-0-1">
+          <h3><u>0.1: Calibrating The Camera</u></h3>
+          <p>The images of ArUco tags that were taken under the same zoom but from different angles and distances were used to calibrate our camera. To avoid distortion effects from real cameras, the smartphone camera was utilized instead. The pipeline is as follows:</p>
+          <ol>
+            <li>Loop through all the calibration images</li>
+            <li>For each image, detect the ArUco tags using OpenCV's <code>cv2.aruco.detectMarkers</code> (also handle the case where no tags are detected)</li>
+            <li>Extract the corner coordinates from the detected tags</li>
+            <li>Collect all detected corners and their corresponding 3D world coordinates by referring to the ArUco tags as the world origin</li>
+            <li>Use <a href="https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html#ga3207604e4b1a1758aa66acb6ed5aa65d"> <code>cv2.calibrateCamera</code></a> to compute the camera intrinsics and distortion coefficients</li>
+          </ol>
+          <p><strong>Resizing raw images smaller</strong>. The original photos were too large to be processed; therefore, they were resized first, and then we will play with the resized images for all the following parts of this project. Since all calibration and later pose estimation are also performed on the resized images, the estimated intrinsics correspond to the resized resolution, so the NeRF pipeline remains consistent.</p>
+          <p><strong>Results:</strong>The RMS reprojection error is around 0.71 pixels, which is within a reasonable range for a smartphone camera and resized images, indicating that the calibration is successful.</p>
+        </section>
+
+        <section id="part-0-2">
+          <h3><u>0.2: Capturing a 3D Object Scan</u></h3>
+          <p>Here, I cut one of the ArUco tags from the board used in Part 0.1 and put it next to our object to be scanned. In my case, I scanned my Labubu toy. For good NeRF results later, here we follow the guidelines below when capturing the photos:</p>
+          <ol>
+              <li>Take all photos under the same zoom as used in Part 0.1 (24mm focal length without digital zoom in my case).</li>
+              <li>Keep the brightness and exposure consistent across all photos.</li>
+              <li>Keep our hands steady while taking photos to avoid motion blur.</li>
+              <li>Capturing photos from different angles around the object to cover all sides.</li>
+              <li>Keep the same distance from the object for all photos, i.e., photos distributed like a dome.</li>
+              <li>Keep the object reasonably centered in each frame and ensure it occupies enough pixels for NeRF to learn fine details.</li>
+          </ol>
+        </section>
+
+        <section id="part-0-3">
+          <h3><u>0.3: Estimating Camera Pose</u></h3>
+          <p>With the intrinsics from camera calibration, together with the photos taken in Part 0.2, we can estimate camera poses (position and orientation) for each image of our Labubu scan, which is a <em>Perspective-n-Point (PnP)</em> problem: estimating camera extrinsics given a set of known 3D points in the world coordinate system and their correspnding 2D projections in an image.</p>
+          <p>Here we use OpenCV's <code>cv2.solvePnP</code> function to solve this problem. The implemented pipeline is roughly as follows:</p>
+          <ol>
+              <li>Loop through all the images.</li>
+              <li>For each image, detect the ArUco tag that we placed next to our object.</li>
+              <li>Extract the corner coordinates from the detected tag.</li>
+              <li>Define the 3D-2D correspondences between the known 3D points and the detected 2D points. Here, I define the ArUco tag's top-left corner as the world origin, and the other corners follow from the known physical tag size (6 cm × 6 cm).</li>
+              <li>Call <code>cv2.solvePnP()</code> with the 3D-2D correspondences, camera intrinsics, and distortion coefficients to estimate the rotation and translation vectors.</li>
+              <li>If successful, convert the world-to-camera transformation to camera-to-world extrinsics and save them; otherwise, return an identity matrix.</li>
+          </ol>
+          <p><strong>Results:</strong>Some images did not contain a clearly visible tag and were therefore skipped. This is expected and does not harm the reconstruction, as long as we retain enough diverse viewpoints. At the end of this process, we obtained 139 valid images with their estimated camera extrinsics. To verify that the estimated camera poses are reasonable, two screenshots of the visualization of the estimated camera poses rendered in <code>Viser</code> are shown below. The frustums form a dome-like distribution around the Labubu toy, which matches the way I captured the photos in Part 0.2 and confirms that the pose estimation pipeline is working correctly.</p>
+
+          <h4><u>Visualizing Cloud of Cameras in Viser</u></h4>
+          <p>It can be observed that our cloud of cameras form a dome-like distribution around the Labubu, matching our initial setup. Actually, careful photographing will help a lot when we train a NeRF of it (will see later).</p>
+          <div class="gallery gallery-wide">
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_0/camera_frustums_1.png"
+                  data-full="media/part_0/camera_frustums_1.png"
+                  alt="Cloud of Cameras">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
+                Cloud of Cameras 1
+              </p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_0/camera_frustums_2.png"
+                  data-full="media/part_0/camera_frustums_2.png"
+                  alt="Cloud of Cameras 2">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
+                Cloud of Cameras 2
+              </p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_0/camera_frustums_3.png"
+                  data-full="media/part_0/camera_frustums_3.png"
+                  alt="Cloud of Cameras 3">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">
+                Cloud of Cameras 3
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="part-0-4">
+          <h3><u>0.4: Undistorting images and creating a dataset</u></h3>
+          <p>Now, with the camera intrinsics and pose estimates, we can undistort our images and create a dataset for training NeRF in the later parts. For the division of training and validation sets, I randomly selected $80\%$ of the valid images for training and the remaining $20\%$ for validation. The undistorted images, along with the camera poses (<code>c2ws</code>) and focal length extracted from the intrinsic matrix, were saved in a <code>.npz</code> file with the same format as the provided synthetic Lego dataset, ensuring compatibility with the NeRF implementation in the subsequent parts.</p>
+        </section>
+      </section>
+
+      <section id="part-1">
+        <h2><u>Part 1: Fit a Neural Field to a 2D Image</u></h2>
+        <p>Before jumping into 3D NeRF ($F: \{x,y,z,\theta,\phi\} \to \{r,g,b,\sigma\}$), let's first play with NeRF using a 2D example. In fact, NeRF will fall back to just a <em>Neural Field</em> ($F: \{u,v\} \to \{r,g,b\}$) in 2D, since there is no concept of <em>radiance</em> in 2D space.</p>
+        <p>In this part, we will create a neural field that can represent a 2D image and optimize it to fit this image. Specifically, let's train a Multilayer Perceptron (MLP) network with Sinusoidal Positional Encoding (PE) as our neural field $F$ that maps 2D pixel coordinates to the corresponding RGB colors. Some implementation details are introduced as follows.</p>
+
+        <h3><u>Model Architecture and Training Configuration</u></h3>
+        <p><strong>Positional Encoding</strong>. To help the MLP learn high-frequency details in the image effectively, we apply Sinusoidal Positional Encoding to the pixel coordinates, together with the original coordinates, as our input to the MLP. Given an original input $x$, the PE with $L$ as its highest frequency level is defined as:
+        $$
+        PE(x) = [x, \sin(2^0 \pi x), \cos(2^0 \pi x), \sin(2^1 \pi x), \cos(2^1 \pi x), \ldots, \sin(2^{L-1} \pi x), \cos(2^{L-1} \pi x)]
+        $$
+        which applies to each dimension of the input independently, hence, expanding the input dimension from $x \in \mathbb{R}^d$ to $d \times (2L + 1)$.</p>
+
+        <p><strong>MLP architecture</strong>. The MLP architecture for this part follows the suggested structure from the problem statement. The later parts may change some hyperparameters here and there, but all of them mainly follow this structure as a foundation below:</p>
+        <figure class="figure-center shrink-70">
+          <img src="media/part_1/mlp_img.jpg" alt="MLP Architecture for 2D NeRF" class="zoomable" data-full="media/part_1/mlp_img.jpg">
+        </figure>
+        <ol>
+            <li><u>Positional Encoder</u>: apply sinusoidal PE to project the input space from <code>in_dim=2</code> to <code>in_dim=2*(2L+1)</code>, where <code>L</code> is the highest frequency level.</li>
+            <li><u>Hidden layers</u>: 3 fully connected linear layers with <code>hidden_dim=256</code> and ReLU activations.</li>
+            <li><u>Output layer</u>: a fully connected linear layer with <code>out_dim=3</code> followed by a Sigmoid activation to ensure the output colors are in <code>[0, 1]</code>.</li>
+        </ol>
+
+        <p><strong>Dataset class</strong>. A custom dataset class is inherited from <code>torch.utils.data.Dataset</code> that loads the image and prepares the (pixel coordinate, color) pairs for training, both of which are normalized within $[0, 1]$ range to facilitate training.</p>
+
+        <p><strong>Data loader</strong>. A data loader function is implemented to randomly sample <code>N</code> (pixel coordinate, color) pairs from the dataset class for each training iteration.</p>
+
+        <p><strong>Trainer & training configuration</strong>. The squared error (MSE) loss (<a href="https://pytorch.org/docs/stable/generated/torch.nn.MSELoss.html">torch.nn.MSELoss</a>) between the predicted colors and ground truth is used as the objective. The model is optimized using Adam (<a href="https://pytorch.org/docs/stable/generated/torch.optim.Adam.html">torch.optim.Adam</a>) optimizer with a learning rate of <code>lr=1e-2</code> for <code>n_iters=10000</code> iterations. Each iteration randomly samples <code>N=10000</code> pixels from the image to compute the loss and update the model. The model performance is evaluated with PSNR metric, which is computed from MSE by:
+        $$
+        PSNR = 10 \cdot \log_{10}\left(\frac{1}{MSE}\right)
+        $$
+        Since we are fitting a single image, the validation set is the same as the training set here.</p>
+
+        <h3><u>Fox Example: Fox Image & Ablation Study</u></h3>
+        <p>Here we start from <a href="https://live.staticflickr.com/7492/15677707699_d9d67acf9d_b.jpg"> this image of fox</a>. To verify that how the hyperparameters of layer width (channel size, or <code>hidden_dim</code>) and max frequency $L$ for the PE affect the fitting quality, we conduct a small ablation study by training the model with different combination of them. Four configurations are tested:</p>
+        <ol>
+            <li><code>hidden_dim=32, L=2</code></li>
+            <li><code>hidden_dim=32, L=10</code></li>
+            <li><code>hidden_dim=256, L=2</code></li>
+            <li><code>hidden_dim=256, L=10</code></li> 
+        </ol>
+
+        <p>All other configurations remain the same as described before:</p>
+        <ol>
+            <li>Number of iterations: <code>n_iters=10000</code></li>
+            <li>Learning rate: <code>lr=1e-2</code></li>
+            <li>Number of sampled pixels per iteration: <code>N=10000</code></li>
+            <li>Number of hidden layers: 3</li>
+        </ol>
+
+        <h4><u>Fox: Comparison of Different Configurations</u></h4>
+        <p>From the training logs shown below, it can be observed that increasing both the layer width (<code>hidden_dim</code>) and the maximum frequency level (<code>L</code>) leads to better fitting quality, as indicated by higher PSNR values. It makes sense because a wider network has a larger capacity to learn complex mappings, and a higher frequency level allows the model to capture finer details in the image.</p>
+        <figure class="figure-center">
+          <img src="media/part_1/training_psnr_curve_fox.png" alt="Training PSNR Curve for Fox Image" class="zoomable" data-full="media/part_1/training_psnr_curve_fox.png">
+        </figure>
+
+        <h4><u>Fox: Visualization of Reconstructed Images During Training</u></h4>
+        <p>Now, let's visualize the reconstructed images at different training iterations for all of the configurations. The images below show the model's output at various training stages, demonstrating how the neural field progressively learns to represent the fox image more accurately over time. With higher layer width and frequency level, the model converges faster and achieves higher quality.</p>
+        <figure class="figure-center">
+          <img src="media/part_1/reconstructed_fox_all_configs.png" alt="Reconstructed Images of Fox at Different Training Iterations" class="zoomable" data-full="media/part_1/reconstructed_fox_all_configs.png">
+        </figure>
+
+        <h3><u>Labubu Example: Reconstruct Our Own Image</u></h3>
+        <p>Here let's try to apply the same neural field fitting pipeline to reconstruct my own image. The model and training configurations are the same as the best-performing one in the ablation study of fox image above. The reconstructed image is one of our resized labubu photos taken in Part 0.</p>
+        <figure class="figure-center">
+          <img src="media/part_1/reconstructed_labubu_hidden_256_L_10.png" alt="Reconstructed Image of Labubu" class="zoomable" data-full="media/part_1/reconstructed_labubu_hidden_256_L_10.png">
+          <img src="media/part_1/training_psnr_curve_labubu.png" alt="Training PSNR Curve for Labubu Image" class="zoomable" data-full="media/part_1/training_psnr_curve_labubu.png">
+        </figure>
+      </section>
+
+      <section id="part-2">
+        <h2><u>Part 2: Fit a Neural Radiance Field from Multi-view Image</u></h2>
+        <p>Once we are familiar with the 2D case, we can now proceed to the more interesting task that using a neural <em>radiance</em> field to represent a 3D space, through inverse rendering from multi-view calibrated images as supervision signals. For this part, we will use the Lego scene from the original <a href="https://www.matthewtancik.com/nerf">paper</a> but with lower resolution ($200 \times 200$) and preprocessed cameras (available from <a href="https://cal-cs180.github.io/fa25/hw/proj4/assets/lego_200x200.npz">here</a>).</p>
+
+        <p>Let's first build the bricks for our NeRF implementation, including creating rays from the estimated camera, sampling points along each ray, and volume rendering, which will be used together to form the NeRF training and inference pipeline.</p>
+
+        <section id="part-2-1">
+          <h3><u>Part 2.1: Create Rays from Cameras</u></h3>
+          <p>Recall that NeRF is a volumetric representation of a 3D scene, where each point in space emits radiance in different directions. To render an image from a given camera viewpoint, we need to generate rays that originate from the camera and pass through each pixel in the image plane. Therefore, here we need a function to convert a pixel coordinate to a ray with origin and normalized direction, say, <code>ray_o, ray_d = px2ray(K, c2w, uv)</code>. Instead of implementing the full function directly, let's first decompose it into multiple steps, each of which can be implemented and verified separately, and then we can combine them to form the final function.</p>
+
+          <p></p><strong>Homogeneous coordinate helpers</strong>. First, we can implement two helper functions to convert between Euclidean coordinates and homogeneous coordinates:</p>
+          <ul>
+              <li><code>get_homoge_coords(x)</code>: convert Euclidean coordinates <code>x</code> into homogeneous coordinates by appending a 1 to each coordinate.</li>
+              <li><code>homoge_back(x_h)</code>: convert homogeneous coordinates <code>x_h</code> back to Euclidean coordinates by dividing by the last coordinate and removing it.</li>
+          </ul>
+
+          <p><strong>Camera to World Coordinate Conversion</strong>. The transformation between the world space $\mathbf{X}_w = (x_w, y_w, z_w)$ and the camera space $\mathbf{X}_c = (x_c, y_c, z_c)$ can be defined as a rigid body transformation that composed by a rotation ($\mathbf{R} \in \mathbb{R}^{3 \times 3}$) and a translation matrix ($\mathbf{t} \in \mathbb{R}^{3}$). The whole transformation can be represented as a single linear transformation in the homogeneous coordinate system:</p>
+
+          <p>$$
+          \begin{bmatrix}
+          x_c \\ y_c \\ z_c \\ 1
+          \end{bmatrix}
+          =
+          \begin{bmatrix}
+          \mathbf{R} & \mathbf{t} \\
+          0 & 1
+          \end{bmatrix}
+          \begin{bmatrix} x_w \\ y_w \\ z_w \\ 1
+          \end{bmatrix}
+          = \mathbf{T}_{c \gets w}
+          \begin{bmatrix} x_w \\ y_w \\ z_w \\ 1
+          \end{bmatrix}
+          $$
+          in which the $\mathbf{T}_{c \gets w}$ is called world-to-camera (w2c) transformation matrix. Similarly, we can have the camera-to-world (c2w) transformation matrix $\mathbf{T}_{w \gets c}$ by inverting $\mathbf{T}_{c \gets w}$.</p>
+
+          <p><u>Implementation details</u>: I implemented a <code>transform(c2w, x_c)</code> function that maps camera coordinates <code>x_c</code> to world coordinates using the c2w transformation matrix, with the following steps:</p>
+          <ol>
+              <li>Convert <code>x_c</code> into homogeneous coordinates using <code>get_homoge_coords</code>, producing tensors of shape <code>(N, 4)</code> for a single camera or <code>(B, N, 4)</code> for batched cameras.</li>
+              <li>Apply the camera-to-world transform using <code>np.einsum</code>:  
+                  <ul>
+                      <li>single camera: <code>x_w_h = np.einsum('ij,nj->ni', c2w, x_c_h)</code></li>
+                      <li>batched cameras: <code>x_w_h = np.einsum('bij,bnj->bni', c2w, x_c_h)</code></li>
+                  </ul>
+                  This supports both <code>(N,3)</code> and <code>(B,N,3)</code> inputs.</li>
+              <li>Convert the transformed points back to Euclidean coordinates using <code>homoge_back</code>, obtaining the final world-space coordinates.</li>
+          </ol>
+
+          <p><strong>Pixel to Camera Coordinate Conversion</strong>. Consider a pinhole camera with focal length $(f_x, f_y)$ and principal point $(o_x, o_y)$ where $o_x = \text{img\_width} / 2$ and $o_y = \text{img\_height} / 2$. The intrinsic matrix $\mathbf{K}$ of this camera can be represented as:
+          $$
+          \mathbf{K} =
+          \begin{bmatrix}
+          f_x & 0 & o_x \\
+          0 & f_y & o_y \\
+          0 & 0 & 1
+          \end{bmatrix}
+          $$
+          which can be used to project a 3D point $(x_c, y_c, z_c)$ in the <em>camera coordinate system</em> to a 2D point $(u,v)$ in the <em>image pixel coordinate system</em>:
+          $$
+          s \begin{bmatrix}
+          u \\ v \\ 1 \end{bmatrix}
+          = \mathbf{K} \begin{bmatrix} x_c \\ y_c \\ z_c \end{bmatrix}
+          $$
+          in which $s = z_c$ is the depth of this point along the optical axis. Here, we implement a inverse mapping of this projection, i.e., from pixel coordinate $(u,v)$ to camera coordinate $(x_c, y_c, z_c)$ given a specific depth $s$ and the intrinsic matrix $\mathbf{K}$:
+          $$
+              \mathbf{x}_c = s \cdot \mathbf{K}^{-1} [u, v, 1]^{\top}
+          $$</p>
+
+          <p><u>Implementation details</u>: I implemented a <code>px2cam(K, uv, s)</code> function that maps pixel coordinates <code>uv</code> to camera coordinates:</p>
+          <ol>
+              <li>Convert <code>uv</code> to homogeneous coordinates <code>uv_h = (u, v, 1)</code> using <code>get_homoge_coords</code>.</li>
+              <li>Compute the inverse intrinsic matrix <code>K_inv = np.linalg.inv(K)</code>.</li>
+              <li>Apply the inverse projection <code>x_c = s * K_inv @ uv_h</code> using <code>np.einsum</code>, supporting both <code>(N, 2)</code> and batched <code>(B, N, 2)</code> inputs.</li>
+          </ol>
+
+          <p><strong>Pixel to Ray</strong>. A ray can be defined by an origin vector $\mathbf{r}_o \in \mathbb{R}^3$ and a direction vector $\mathbf{r}_d \in \mathbb{R}^3$. In the case of a pinhole camera, we want to know the $\{\mathbf{r}_o, \mathbf{r}_d\}$ for every pixel $(u,v)$. The origin $\mathbf{r}_o$ of those rays is easy to get because it is just the location of the camera in world coordinates. For $T_{w \gets c}$ transformation matrix, the camera origin is simply the translation component:
+          $$
+          \mathbf{r}_o = \mathbf{t}_{w \gets c}
+          $$</p>
+
+          <p>To calculate the ray direction for pixel $(u,v)$, we can simply choose a point along this ray with depth equal to 1 ($s=1$) and find its coordinate in world space $\mathbf{X}_w = (x_w, y_w, z_w)$ using our previously defined transformations, then the normalized direction vector can be computed as:
+          $$
+          \mathbf{r}_d = \frac{\mathbf{X}_w - \mathbf{r}_o}{\|\mathbf{X}_w - \mathbf{r}_o\|_2}
+          $$</p>
+        
+          <p><u>Implementation details</u>: The implemented <code>px2ray(K, c2w, uv)</code> function combines the above steps to compute the ray origin and direction for pixel coordinates <code>uv</code>, by:</p>
+          <ol>
+              <li>Convert pixel coordinates <code>uv</code> to camera coordinates using <code>x_c = px2cam(K, uv, s=1.0)</code>.</li>
+              <li>Convert camera coordinates <code>x_c</code> to world coordinates using <code>x_w = transform(c2w, x_c)</code>.</li>
+              <li>Extract the camera origin <code>r_o</code> from the translation component of <code>c2w</code>.</li>
+              <li>Compute the ray direction <code>r_d</code> by normalizing the vector from <code>r_o</code> to <code>x_w</code>.</li>
+              <li>Finally, return <code>r_o</code> and <code>r_d</code>.</li>
+          </ol>
+          </section>
+
+        <section id="part-2-2">
+          <h3><u>Part 2.2: Sampling</u></h3>
+          <p>Recall that the training signal of NeRF comes from the rendered images, which are generated by casting rays from the camera through each pixel and sampling points along these rays to query the neural radiance field. Before building a volumetric renderer, we first need to implement the functions to sample points along rays, which can be broken down into two steps: (1) sampling rays from images and (2) sampling points along each ray.</p>
+
+          <p><strong>Dataset Class</strong>. Similar to what we did in Part 1 for the 2D case, here we again create a custom dataset class <code>DatasetNerf</code> that loads the multi-view images <code>images</code>, their extrinsics <code>c2ws</code>, and intrinsics <code>K</code>. It's methods include:</p>
+
+          <ol>
+              <li><code>__init__()</code>: Loading the images, camera extrinsics, and intrinsics, then get <code>uv</code> with a shift of 0.5, and get the normalized colors.</li>
+              <li><code>__len__()</code>: Return the number of pixels.</li>
+              <li><code>__getitem__()</code>: Return the pixel coordinates, normalized colors, and the <code>c2w</code> matrix of the current view.</li>
+          </ol>
+
+          <p><strong>Sampling Rays from Images</strong>. Here we extend what we did in Part 1 (sample pixel coordinates and colors), together with the camera intrinsics and extrinsics, to convert the pixel coordinates to ray origins and directions.</p>
+
+          <p><u>Implementation details</u>: The implemented <code>sample_rays_from_imgs(dataset,N_rays)</code> function randomly samples <code>N_rays</code> rays from multi-view images in the <code>dataset</code> by:</p>
+
+          <ol>
+              <li>Randomly select <code>N_rays</code> pixels from all images in the dataset.</li>
+              <li>Return the selected pixel coordinates <code>uv</code>, colors, and corresponding <code>c2w</code> matrices, in the dimension of <code>(N_rays, 2)</code>, <code>(N_rays, 3)</code>, and <code>(N_rays, 4, 4)</code> respectively.</li>
+          </ol>
+
+          <p><strong>Sampling Points along Rays</strong>. After having rays, we need to discretize each ray into samples that live in the 3D space. The simplest way is to uniformly sample points along the ray (<code>t=np.linspace(near,far,n_samples)</code>). For the Lego scene that we have, we can set <code>near=2.0</code> and <code>far=6.0</code>. The actually 3D coordinates can be acuired by $\mathbf{x} = \mathbf{R}_o + \mathbf{R}_d \cdot t$. However, this would lead to a fixed set of 3D points, which could potentially lead to overfitting when we train the NeRF later on. On top of this, we want to introduce some small perturbation on the points <em>only during training</em>, so that every location along the ray would be touched upon during training. This can be achieved by something like <code>t = t + (np.random.rand(t.shape) * t_width)</code> where is set to be the start of each interval.</p>
+
+          <p><u>Implementation details</u>: The implemented <code>sample_pts_from_rays(r_os, r_ds, N_pts, near, far, perturbation)</code> function samples points along each ray defined by <code>ray_o</code> and <code>ray_d</code>:</p>
+          <ol>
+              <li>Get the number of rays from <code>N_rays = r_os.shape[0]</code>.</li>
+              <li>Create <code>N_pts + 1</code> depth boundaries between <code>near</code> and <code>far</code> using <code>torch.linspace</code>, and derive the interval starts <code>t_start</code> and widths <code>t_width</code>, both of shape <code>(N_pts,)</code>.</li>
+              <li>If <code>perturbation=True</code>, sample a random offset <code>noise</code> in <code>[0, 1)</code> for each ray and each interval, and set  
+                  <code>t = t_start[None, :] + noise * t_width[None, :]</code>, so that each <code>t</code> lies inside its interval. Otherwise, use the interval midpoints.</li>
+              <li>Compute the 3D sample positions with  
+                  <code>pts = r_os[:, None, :] + r_ds[:, None, :] * t[..., None]</code>, producing <code>pts</code> of shape <code>(N_rays, N_pts, 3)</code>.</li>
+              <li>Prepare expanded versions of the ray origins and directions for later rendering:  
+                  <code>r_os_expand</code> and <code>r_ds_expand</code> with shape <code>(N_rays, N_pts, 3)</code>, the per-interval distances <code>deltas</code> of shape <code>(N_rays, N_pts, 1)</code> obtained from <code>t_width</code>, and the sampled depths <code>ts</code> of shape <code>(N_rays, N_pts, 1)</code>.</li>
+          </ol>
+
+          <p>These outputs will be used directly by the volume rendering module in the next part to accumulate colors and depths along each ray.</p>
+        </section>
+
+        <section id="part-2-3">
+          <h3><u>Part 2.3: Putting the Dataloading Together</u></h3>
+          <p>Similar to Part 1, we prepare a simple dataloader that randomly samples pixels from the multi-view training images. The main difference here is that instead of returning only pixel coordinates and colors, we also convert each sampled pixel into a 3D ray in world space and return the ray origin, ray direction, and pixel color.</p>
+
+          <p><u>Implementation details</u>: The function <code>sample_rays(dataset, N_rays, K)</code> wraps the previous utilities into a single call:</p>
+
+          <ol>
+            <li>First, it calls <code>sample_rays_from_imgs(dataset, N_rays)</code> to randomly sample <code>N_rays</code> pixels across all views. This returns pixel coordinates <code>uvs</code>, colors, and the corresponding <code>c2w</code> matrices.</li>
+            <li>To use the batched interface of <code>px2ray</code>, the sampled pixels are reshaped to <code>uvs_batch</code> of shape <code>(N_rays, 1, 2)</code>, and the <code>c2w</code> matrices are stacked into an array of shape <code>(N_rays, 4, 4)</code>.</li>
+            <li>We then call <code>px2ray(K, c2ws_batch, uvs_batch)</code> to obtain ray origins and directions with shape <code>(N_rays, 1, 3)</code>, and squeeze the singleton dimension to get <code>(N_rays, 3)</code>.</li>
+            <li>Finally, we convert the NumPy arrays back to <code>torch.float32</code> tensors and return <code>r_os</code>, <code>r_ds</code>, and <code>colors</code> as tensors of shape <code>(N_rays, 3)</code>. These are the basic ray batches that will be used in the NeRF training loop.</li>
+          </ol>
+
+          <h3><u>Visualization of Ray & Point Sampling in Viser</u></h3>
+          As a demonstration, here we visualize how the rays, as well as the points along each ray, are sampled in the 3D space, which are the core components of NeRF rendering and training process. For each view, we visualize 100 rays, eahch of which has 64 sampled points along it (with perturbation) within the near and far bounds.
+
+          <figure class="gallery gallery-wide">
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/ray_pts_sample_1.png"
+                  data-full="media/part_2/ray_pts_sample_1.png"
+                  alt="ray and point sampling">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Ray and Point Sampling</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/ray_pts_sample_2.png"
+                  data-full="media/part_2/ray_pts_sample_2.png"
+                  alt="ray and point sampling">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Ray and Point Sampling</p>
+            </div>
+          </figure>
+
+          <figure class="gallery gallery-wide">
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/ray_pts_sample_3.png"
+                  data-full="media/part_2/ray_pts_sample_3.png"
+                  alt="ray and point sampling">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Ray and Point Sampling</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/ray_pts_sample_4.png"
+                  data-full="media/part_2/ray_pts_sample_4.png"
+                  alt="ray and point sampling">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Ray and Point Sampling</p>
+            </div>
+          </figure>
+        </section>
+
+        <section id="part-2-4">
+          <h3><u>Part 2.4: Neural Radiance Field</u></h3>
+          <p>With the samples in 3D space, we can then use a neural net to predict the density and color for those samples. Similar to Part 1, here we create an MLP network with three main differences:</p>
+          <ol>
+              <li>Input is now 3D world coordinates, alongside a 3D vector as the ray direction. And the output is not only the color but also the corresponding density for the 3D points. In the radiance field, the color of each point depends on the view direction, so we are going to use the view direction as the condition when predicting colors. Here we use Sigmoid to constrain the color outputs to [0,1], and use ReLU to constrain the output density non-negative. The rray direction also needs to be encoded by PE but can use less frequency (e.g., L=4) than the coordinate PE (e.g., L=10).</li>
+              <li>Since we are doing a more challenging task of optimizing a 3D representation, here we need a deeper network with more parameters.</li>
+              <li>Inject the input (after PE) to the middle of our MLP through concatenation, which is a general trick for <em>deep</em> neural network.
+          </ol>
+          <p>The architectural design and implementation follow the suggested one in the project description, illustrated below. The following parts may change hyperparameters, but all of them are modified from this one as the foundation. The modifications will be explicitly reported later if applicable.</p>
+          <figure class="figure-center">
+            <img src="media/part_2/mlp_nerf.png" alt="NeRF MLP Architecture" class="zoomable" data-full="media/part_2/mlp_nerf.png">
+          </figure>
+        </section>
+
+        <section id="part-2-5">
+          <h3><u>Part 2.5: Volume Rendering</u></h3>
+          <p>The core volume rendering equation is as follows:
+          $$
+          C(\mathbf{r}) = \int_{t_n}^{t_f} T(t) \sigma(\mathbf{r}(t)) \mathbf{c}(\mathbf{r}(t), \mathbf{d}) dt, 
+          \quad \text{where} \quad
+          T(t) = \exp\left(-\int_{t_n}^{t} \sigma(\mathbf{r}(s)) ds\right)
+          $$
+          This fundamentally means that at every small step $dt$ along the ray, we add the contribution of that small interval $[t, t+dt]$ to that final color, conceptually, we sum contributions over infinitely many infinitesimal intervals, which becomes an integral.</p>
+
+          <p>The discrete approximation (thus tractable to compute) of this equation can be stated as follows:
+          $$
+          \hat{C}(\mathbf{r}) = \sum_{i=1}^{N} T_i \alpha_i \mathbf{c}_i = \sum_{i=1}^{N} w_i \mathbf{c}_i, \quad \text{where} \quad
+          T_i = \exp\left(-\sum_{j=1}^{i-1} \sigma_j \delta_j\right), \quad
+          \alpha_i = 1 - \exp\left(-\sigma_i \delta_i\right)
+          $$
+          where $\mathbf{c}_i$ is the color obtained from our network at sample location $i$, $T_i$ is the probability of a ray <em>not</em> terminating before sample location $i$, and $\alpha_i = 1 - \exp\left(-\sigma_i \delta_i\right)$ is the probability of terminating at sample location $i$.</p>
+
+          <p>We can also interpret this rendering process as a weighted sum of colors along the ray, where the weight $w_i = T_i \alpha_i$ indicates how much each sample contributes to the final color.</p>
+
+          <p><u>Implementation details</u>: The function <code>volrend(sigmas, rgbs, deltas, ts, depth)</code> implements this discrete renderer:</p>
+          <ol>
+              <li>All inputs have shape <code>(N_rays, N_pts, ...)</code> except for <code>depth</code>, which indicates whether to render an RGB image or a depth map.</li>
+              <li>Compute the opacities  
+                  <code>alphas = 1 - exp(-sigmas * deltas)</code>
+                  giving shape <code>(N_rays, N_pts, 1)</code>.</li>
+              <li>Compute the transmittances <code>T_i</code>:  
+                  <ul>
+                      <li>accumulate <code>sigmas * deltas</code> along the ray,</li>
+                      <li>shift by one position and prepend a zero to obtain the sum of previous intervals,</li>
+                      <li>apply <code>exp(-...)</code> to obtain <code>T_i</code>.</li>
+                  </ul>
+              </li>
+              <li>Render color by taking the weighted sum  
+                  <code>torch.sum(alphas * T_i * rgbs, dim=1)</code>,
+                  producing <code>(N_rays, 3)</code>.</li>
+              <li>If <code>depth=True</code>, we instead compute  
+                  <code>torch.sum(w_i * ts, dim=1)</code>, producing <code>(N_rays, 1)</code>.  
+                  The role of depth rendering will be introduced in a later section.</li>
+          </ol>
+
+          <strong><u>Trainer for NeRF</u></strong>
+          <p>Here we build a <code>train_val_nerf</code> function that encapsulates the whole NeRF pipeline: sampling rays, sampling points along each ray, querying the MLP, volume rendering, and computing the photometric loss, together with periodic validation and checkpointing.</p>
+          <p><u>Implementation details</u>: In each training iteration, the following steps are performed:</p>
+          <ol>
+              <li>Randomly sample <code>N_rays_per_iter</code> rays from the training images using <code>sample_rays</code>.
+              <li>Sample <code>N_pts</code> points along each ray with <code>sample_pts_from_rays</code>, with perturbation enabled during training.
+              <li>Feed the 3D points and expanded view directions to <code>MlpNerf</code> to predict densities and colors.
+              <li>Apply the volume renderer <code>volrend</code> to obtain the predicted pixel colors, and minimize the MSE loss to the ground-truth colors using Adam.
+              <li>Every 100 iterations, run the same pipeline on the validation set with perturbation disabled to log the validation PSNR.
+              <li>Periodically save model checkpoints for later visualization and video rendering.
+          </ol>
+
+          <strong><u>Function to render novel frame from extrinsics and intrinsics</u></strong>
+          <p>To use our trained NeRF model to render novel views, here we implement a function <code>render_frames</code> that takes in a set of camera extrinsics and intrinsics, and produces the rendered images. This function is similar to the training loop but without optimization, and it processes all pixels in the image instead of sampling a subset of rays.</p>
+          <p><u>Implementation details</u>: The function <code>render_frames(nerf_model, c2ws, K, H, W, N_pts, near, far, depth)</code> is implemented as follows:</p>
+          <ol>
+              <li>Create a meshgrid of all pixel coordinates <code>uv</code> in the image of size <code>(H, W)</code>, and reshape them to <code>(H*W, 2)</code>, during which the 0.5 offset is added to each coordinate.</li>
+              <li>Get all rays for the image by calling <code>px2ray(K, c2ws, uv)</code>, producing <code>r_os</code> and <code>r_ds</code> of shape <code>(H*W, 3)</code>.</li>
+              <li>Sample points along all rays using <code>sample_pts_from_rays(r_os, r_ds, N_pts, near, far, perturbation=False)</code>, obtaining the 3D sample positions <code>pts</code>, ray origins <code>r_os_expand</code>, ray directions <code>r_ds_expand</code>, deltas, and depths <code>ts</code>.</li>
+              <li>Query the NeRF model to get densities and colors for all sampled points.</li>
+              <li>Perform volume rendering using <code>volrend</code> to get the final rendered image or depth map.</li>
+              <li>Reshape the output back to <code>(H, W, 3)</code> for images or <code>(H, W, 1)</code> for depth maps, and return the result.</li>
+          </ol>
+        </section>
+
+        <section id="part-2-5-lego">
+          <h3><u>Experiment: NeRF of Lego Scene</u></h3>
+          <h4><u>Lego NeRF with 1k iterations</u></h4>
+          <p>Here we first adopt the suggested hyperparameters from the project problem statement, the configurations are as follows:</p>
+          <ul>
+              <li>Number of rays per iteration: 10000</li>
+              <li>Number of points per ray: 64</li>
+              <li>Number of training iterations: 1000</li>
+              <li>Learning rate: 5e-4</li>
+              <li>Near and far bounds: 2.0 and 6.0</li>
+              <li>Highest frequency level for position PE: 10</li>
+              <li>Highest frequency level for direction PE: 4</li>
+          </ul>
+          <p>The training process by plotting the predicted images across iterations, training PSNR curve on train and validation sets, and the rendered test set video, are as follows:</p>
+          <figure class="gallery gallery-wide">
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_200.png"
+                  data-full="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_200.png"
+                  alt="iteration 200">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 200</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_400.png"
+                  data-full="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_400.png"
+                  alt="iteration 400">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 400</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_600.png"
+                  data-full="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_600.png"
+                  alt="iteration 600">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 600</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_800.png"
+                  data-full="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_800.png"
+                  alt="iteration 800">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 800</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_1000.png"
+                  data-full="media/part_2/lego/1000_iter/checkpoint_frames/frame_iter_1000.png"
+                  alt="iteration 1k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 1k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/1000_iter/test_lego.gif"
+                  data-full="media/part_2/lego/1000_iter/test_lego.gif"
+                  alt="test video">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Test video</p>
+            </div>
+          </figure>
+          <figure class="figure-center">
+            <img src="media/part_2/lego/1000_iter/training_val_log.png" alt="Training PSNR Curve for Lego NeRF" class="zoomable" data-full="media/part_2/lego/1000_iter/training_val_log.png">
+          </figure>
+
+          <h4><u>Lego NeRF with more iterations</u></h4>
+          <p>It is apparent that from the training log of 1k iterations, the model is still not fully converged. Here we increase the training iterations and the number of points to see how the model is improved. Let's keep all other hyperparameters the same as before, except increasing the number of training iterations to 10000.</p>
+          <p>The training process by plotting the predicted images across iterations, training PSNR curve on train and validation sets, and the rendered test set video, are as follows:</p>
+          <figure class="gallery gallery-wide">
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_600.png"
+                  data-full="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_600.png"
+                  alt="iteration 600">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 600</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_1000.png"
+                  data-full="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_1000.png"
+                  alt="iteration 1k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 1k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_3000.png"
+                  data-full="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_3000.png"
+                  alt="iteration 3k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 3k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_6000.png"
+                  data-full="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_6000.png"
+                  alt="iteration 6k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 6k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_10000.png"
+                  data-full="media/part_2/lego/more_iter/checkpoint_frames/frame_iter_10000.png"
+                  alt="iteration 10k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 10k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/lego/more_iter/test_lego.gif"
+                  data-full="media/part_2/lego/more_iter/test_lego.gif"
+                  alt="test video">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Test video</p>
+            </div>
+          </figure>
+          <figure class="figure-center">
+            <img src="media/part_2/lego/more_iter/training_val_log.png" alt="Training PSNR Curve for Lego NeRF" class="zoomable" data-full="media/part_2/lego/more_iter/training_val_log.png">
+          </figure>
+          <h4><u>Observations</u></h4>
+          <p>From the above results, we can see that with more training iterations, the NeRF model is able to produce significantly better renderings of the Lego scene. The PSNR on both training and validation sets improves steadily, indicating that the model is learning a more accurate representation of the 3D scene. The rendered images become sharper and more detailed, with fewer artifacts compared to the 1k iteration model. This demonstrates the effectiveness of NeRF in capturing complex 3D structures and view-dependent effects when given sufficient training time.</p>
+        </section>
+
+        <section id="part-2-6">
+          <h3><u>Part 2.6: Training with our own data</u></h3>
+          <p>Now, it's time to train a NeRF model using our own captured Labubu dataset from Part 0. The model architecture keeps the same as before, except increasing the highest frequency level for position PE to 20 and for direction PE to 8, to better capture the fine details in the real-world scene. The training configurations are as follows:</p>
+          <ul>
+              <li>Number of rays per iteration: 10000</li>
+              <li>Number of points per ray: 96</li>
+              <li>Number of training iterations: 30000</li>
+              <li>Learning rate: 5e-4</li>
+              <li>Near and far bounds: 0.02 and 0.4</li>
+              <li>Highest frequency level for position PE: 20</li>
+              <li>Highest frequency level for direction PE: 8</li>
+          </ul>
+          
+          <h4><u>Results & Discussion</u></h4>
+          <p>With some experiments, I found that increasing the frequency levels can improve the model's performance a little bit, but will overfit the training data if setting them too high without regularization. Another observation is that the sampling range defined by <code>[near, far]</code> is crucial and very sensitive for obtaining accurate results, which seems due the drawback of uniform sampling strategy.</p>
+          <p>The training process by plotting the one predicted training image across iterations, training PSNR curve on train and validation sets, and the rendered novel video, are as follows. It can be observed that the model already overfits the training data at around 2k iterations, however, keep training it can typically give us better results when rendering our novel views.</p>
+          <figure class="figure-center shrink-50">
+            <img src="media/part_2/labubu/labubu.gif" alt="Labubu Novel Video" class="zoomable" data-full="media/part_2/labubu/labubu.gif">
+            <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Labubu Novel Video</p>
+          </figure>
+          <figure class="gallery gallery-wide">
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/labubu/checkpoint_frames/frame_iter_200.png"
+                  data-full="media/part_2/labubu/checkpoint_frames/frame_iter_200.png"
+                  alt="iteration 200">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 200</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/labubu/checkpoint_frames/frame_iter_1000.png"
+                  data-full="media/part_2/labubu/checkpoint_frames/frame_iter_1000.png"
+                  alt="iteration 1k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 1k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/labubu/checkpoint_frames/frame_iter_2000.png"
+                  data-full="media/part_2/labubu/checkpoint_frames/frame_iter_2000.png"
+                  alt="iteration 2k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 2k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/labubu/checkpoint_frames/frame_iter_5000.png"
+                  data-full="media/part_2/labubu/checkpoint_frames/frame_iter_5000.png"
+                  alt="iteration 5k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 5k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/labubu/checkpoint_frames/frame_iter_10000.png"
+                  data-full="media/part_2/labubu/checkpoint_frames/frame_iter_10000.png"
+                  alt="iteration 10k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 10k</p>
+            </div>
+            <div>
+              <img class="responsive zoomable"
+                  src="media/part_2/labubu/checkpoint_frames/frame_iter_30000.png"
+                  data-full="media/part_2/labubu/checkpoint_frames/frame_iter_30000.png"
+                  alt="iteration 30k">
+              <p style="text-align:center; color:var(--text-muted); margin-top:6px;">Iteration 30k</p>
+            </div>
+          </figure>
+
+          <figure class="figure-center">
+            <img src="media/part_2/labubu/training_val_log.png" alt="Training PSNR Curve for Labubu NeRF" class="zoomable" data-full="media/part_2/labubu/training_val_log.png">
+          </figure>
+        </section>
+
+        <section id="b&w-depth-map">
+          <h3><u>Bells & Whistles: Depth map video for the Lego scene</u></h3>
+          <p>We can also render the depth map with the weight $w_i = T_i \alpha_i$ computed during volume rendering, which is the "expected depth" expressed as:
+          $$
+          \bar{t} = \sum_{i} T_i \alpha_i t_i = \sum_{i} w_i t_i
+          $$</p>
+
+          <p><u>Implementation details</u>: The <code>volrend</code> function already supports rendering depth maps by setting the <code>depth=True</code> flag. During the rendering process, if this flag is set, the function computes the expected depth along each ray using the weights and sampled depths, returning a depth map instead of an RGB image. Another trick to improve the quality of visualized depth maps is to normalize each frame individually to the range of $[0,1]$, in my implementation, I achieve this by <code>frame = np.clip((frame - near)/(far - near), 0, 1)</code> before saving the depth frames as images or videos.</p>
+
+          <p>The depth map video of the Lego scene is shown below:</p>
+          
+          <figure class="figure-center shrink-50">
+            <img src="media/part_2/lego/more_iter/test_lego_depth.gif" alt="Lego Depth Map" class="zoomable" data-full="media/part_2/lego/more_iter/test_lego_depth.gif">
+          </figure>
+        </section>
+
+      </section>
+
+      <hr>
+      <footer>
+        <p>© 2025 ZHOU Guanren |
+          <a href="mailto:guanren_zhou@berkeley.edu">📧 Email</a> |
+          <a href="https://github.com/Nutlettt" target="_blank" rel="noopener noreferrer">
+            <img src="../media/github.png" alt="GitHub" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;">
+            GitHub
+          </a>
+        </p>
+      </footer>
+    </div>
+  </main>
+
+  <div class="lightbox" id="pg-lightbox">
+    <div class="lb-backdrop"></div>
+    <div class="lb-inner">
+      <img id="lb-img" alt="">
+      <div class="lb-caption" id="lb-cap"></div>
+      <button class="lb-close" id="lb-close" aria-label="Close">&times;</button>
+    </div>
+  </div>
+  <script>
+  (function(){
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebarBtn = document.getElementById('sidebar-toggle');
+    function closeSidebar(){ sidebar.classList.add('collapsed'); overlay.classList.remove('open'); }
+    function toggleSidebar(){ const collapsed = sidebar.classList.toggle('collapsed'); overlay.classList.toggle('open', !collapsed); }
+    sidebarBtn && sidebarBtn.addEventListener('click', toggleSidebar);
+    overlay && overlay.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeSidebar(); });
+
+    const themeBtn = document.getElementById('theme-toggle');
+    const root = document.documentElement;
+    const targets = [root, document.body];
+    function applyTheme(t){
+      root.setAttribute('data-theme', t);
+      document.body.setAttribute('data-theme', t);
+      const darkOn = t === 'dark';
+      const classes = ['dark','dark-theme','theme-dark','mode-dark'];
+      classes.forEach(c=>{
+        root.classList.toggle(c, darkOn);
+        document.body.classList.toggle(c, darkOn);
+      });
+      const lightClasses = ['light','light-theme','theme-light','mode-light'];
+      lightClasses.forEach(c=>{
+        root.classList.toggle(c, !darkOn);
+        document.body.classList.toggle(c, !darkOn);
+      });
+      // highlight.js theme swap
+      const hlLink = document.getElementById('hljs-theme');
+      if (hlLink) {
+        hlLink.href = darkOn
+          ? 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css'
+          : 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css';
+      }
+      localStorage.setItem('theme', t);
+      if (themeBtn) themeBtn.title = 'Switch to ' + (darkOn ? 'light' : 'dark') + ' theme';
+    }
+    const stored = localStorage.getItem('theme');
+    applyTheme(stored || 'light');
+
+    themeBtn && themeBtn.addEventListener('click', ()=>{
+      const next = (root.getAttribute('data-theme') === 'dark') ? 'light' : 'dark';
+      applyTheme(next);
+    });
+
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{});
+
+    const lb = document.getElementById('pg-lightbox');
+    if(lb){
+      const imgEl = document.getElementById('lb-img');
+      const capEl = document.getElementById('lb-cap');
+      const closeBtn = document.getElementById('lb-close');
+      function open(src, cap){ imgEl.src = src; capEl.textContent = cap || ''; lb.classList.add('open'); }
+      function close(){ lb.classList.remove('open'); imgEl.src=''; }
+      document.querySelectorAll('img.zoomable').forEach(im=>{
+        im.addEventListener('click', ()=> open(im.getAttribute('data-full')||im.src, im.alt));
+      });
+      lb.addEventListener('click', e=>{ if(e.target===lb || e.target.classList.contains('lb-backdrop')) close(); });
+      closeBtn && closeBtn.addEventListener('click', close);
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape' && lb.classList.contains('open')) close(); });
+    }
+  })();
+  </script>
+  <script>
+    window.addEventListener('load', () => {
+      if (!window.hljs) return;
+      document.querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+    });
+  </script>
+</body>
+</html>
