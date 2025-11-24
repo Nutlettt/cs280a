@@ -159,7 +159,7 @@
         <section id="part-A">
           <h2><u>Part A: The Power of Diffusion Models!</u></h2>
           <p>
-            In part A, we will play with pre-trained diffusion models to perform
+            In part A, we will play with pretrained diffusion models to perform
             various image generation tasks and sampling techniques. We will use
             the
             <a
@@ -186,7 +186,7 @@
             <a href="https://huggingface.co">Hugging Face</a>, we can start
             playing with this model by sampling images conditioned on our
             self-crafted text prompts. The text prompts were encoded via a
-            pre-trained text encoder, in this case, the encoder of a
+            pretrained text encoder, in this case, the encoder of a
             <a href="https://arxiv.org/abs/1910.10683">T5</a> model was used,
             which embeds each plain text prompt into a $[1, 77, 4096]^{\top}$
             vector, where $77$ is the maximum token length (sentences longer
@@ -275,7 +275,7 @@
           <h3><u>A.1: Sampling Loops</u></h3>
           <p>
             In this part, we will implement our own "sampling loops" that use
-            the pre-trained DeepFloyd denoisers, which should produce
+            the pretrained DeepFloyd denoisers, which should produce
             high-quality images such as the ones generated before. We will then
             modify these sampling loops to solve different tasks, such as
             inpainting or producing optical illusions.
@@ -369,7 +369,18 @@
         <section id="part-A-1-2">
           <h4><u>A.1.2: Classical Denoising</u></h4>
           <p>
-            Before denoising with the learned diffusion model, let's first see how classical methods perform. Here, we use <em>Gaussian blur filtering</em> to try to remove the noise in the noisy images that we obtained before. The results images before and after denoising are shown below. In my implementation, I used <code>sigma = 2</code> and <code>kernel_size = 6 * sigma + 1</code> for the Gaussian filter.
+            Before denoising with the learned diffusion model, let's first see
+            how classical methods perform. Here, we use
+            <em>Gaussian blur filtering</em> to try to remove the noise in the
+            noisy images that we obtained before. The results images before and
+            after denoising are shown below. In my implementation, I used
+            <code>sigma = 2</code> and
+            <code>kernel_size = 6 * sigma + 1</code> for the Gaussian filter,
+            i.e., covering over $99$% mass of the Gaussian distribution.
+            Apparently, Gaussian blur is ineffective at removing this level of
+            Gaussian additive noise, especially because the noisy image has lost
+            high-frequency structure. Blurring only smooths the image, but
+            cannot reconstruct lost details.
           </p>
           <figure class="figure-center">
             <div>
@@ -389,7 +400,41 @@
 
         <section id="part-A-1-3">
           <h4><u>A.1.3: One-Step Denoising</u></h4>
-          <p>...</p>
+          <p>
+            Now, let's use the pretrained diffusion model to perform the same
+            denoising task in one step. Since the model is pretrained on a
+            <em>very</em> large dataset of $(x_0, x_t)$, we can use it to
+            recover the Gaussian noise conditioned on a certain timestep $t$ and
+            remove it.
+          </p>
+          <p>
+            For matching the input format of the model, since it was trained
+            with text conditioning, we provide the embedding of the prompt "a
+            high-quality photo" as a neutral conditioning.
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            Again, the same noisy images at timesteps
+            <code>t = [250, 500, 750]</code> are denoised using the one-step
+            denoising function we implemented. The results are shown below,
+            which demonstrate a significant improvement over classical
+            denoising. The pretrained diffusion model effectively recovers much
+            of the lost detail and structure in the images.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-3_seed100_one_step_denoising.png"
+                data-full="media/part-a/a1-3_seed100_one_step_denoising.png"
+                alt="One-Step Denoising Results"
+              />
+            </div>
+            <p>
+              One-Step Denoising Results on Campanile at
+              <code>t = [250,500,750]</code> (seed = 100)
+            </p>
+          </figure>
         </section>
 
         <section id="part-A-1-4">
