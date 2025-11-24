@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-light" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Project 5: Fun With Diffusion Models!</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="proj_5.css" />
+    <link
+      id="hljs-theme"
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css"
+    />
+    <script
+      src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"
+      defer
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"
+      defer
+    ></script>
+    <script defer>
+      window.addEventListener("DOMContentLoaded", () => {
+        if (window.hljs) hljs.highlightAll();
+      });
+    </script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+          processEscapes: true,
+        },
+        options: {
+          skipHtmlTags: [
+            "script",
+            "noscript",
+            "style",
+            "textarea",
+            "pre",
+            "code",
+            "figure",
+          ],
+        },
+      };
+    </script>
+    <script
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+  </head>
+  <body class="theme-light" data-theme="light">
+    <nav class="top-navbar">
+      <div class="navbar-left">
+        <a class="breadcrumb" href="../index.html">CS280A</a>
+        <span class="breadcrumb-sep"></span>
+        <span class="breadcrumb" aria-current="page">Project 5</span>
+      </div>
+      <div class="navbar-right">
+        <button
+          id="sidebar-toggle"
+          class="top-icon-btn"
+          aria-label="Toggle sidebar"
+          title="Toggle sidebar"
+        >
+          ☰
+        </button>
+        <button
+          id="theme-toggle"
+          class="top-icon-btn"
+          aria-label="Toggle color theme"
+          title="Toggle color theme"
+        >
+          🌓
+        </button>
+      </div>
+    </nav>
+
+    <aside id="sidebar" class="sidebar collapsed">
+      <nav>
+        <ul>
+          <li>
+            <a href="#part-A">Part A: The Power of Diffusion Models!</a>
+            <ul>
+              <li><a href="#part-A-0">A.0: Setup</a></li>
+              <li><a href="#part-A-1">A.1: Sampling Loops</a></li>
+              <li><a href="#part-A-1-1">A.1.1: Forward Process</a></li>
+              <li><a href="#part-A-1-2">A.1.2: Classical Denoising</a></li>
+              <li><a href="#part-A-1-3">A.1.3: One-Step Denoising</a></li>
+              <li><a href="#part-A-1-4">A.1.4: Iterative Denoising</a></li>
+              <li><a href="#part-A-1-5">A.1.5: Diffusion Model Sampling</a></li>
+              <li><a href="#part-A-1-6">A.1.6: Classifier-Free Guidance</a></li>
+              <li>
+                <a href="#part-A-1-7">A.1.7: Image-to-image Translation</a>
+              </li>
+              <li><a href="#part-A-1-8">A.1.8: Visual Anagrams</a></li>
+              <li><a href="#part-A-1-9">A.1.9: Hybrid Images</a></li>
+              <li>
+                <a href="#part-A-bw1">B &amp; W: More visual anagrams!</a>
+                <a href="#part-A-bw2">B &amp; W: Design a course logo!</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+    <div class="overlay" id="sidebar-overlay" aria-hidden="true"></div>
+
+    <main class="with-sidebar">
+      <div class="main-center">
+        <header>
+          <h1>Fun With Diffusion Models!</h1>
+        </header>
+
+        <!-- <div class="intro-image-row">
+          <img
+            src="media/campus_cylindrical_mosaic_notitle.jpeg"
+            alt="Cylindrical Campus Scenery Mosaic"
+            class="intro-img-pair"
+          />
+        </div> -->
+
+        <section id="introduction">
+          <h2><u>Introduction</u></h2>
+          <p>
+            In this project, we explore diffusion models for generative image
+            tasks. Part A focuses on understanding and experimenting with
+            diffusion sampling, including forward and reverse processes,
+            classical and learned denoising, classifier-free guidance,
+            image-to-image translation, inpainting, and multi-view optical
+            illusions. These techniques allow us to understand how modern
+            diffusion models such as DeepFloyd IF generate and edit images.
+            Then, in part B, we will build and train our own
+            <a href="https://arxiv.org/abs/2210.02747">flow matching</a> model
+            on MNIST.
+          </p>
+          <div class="discussion-card">
+            <h3>Highlights</h3>
+            <ul>
+              <li>Diffusion models for image generation</li>
+              <li>Forward & Reverse Sampling Loops</li>
+              <li>Classical, One-Step, and Iterative Denoising</li>
+              <li>Classifier-Free Guidance</li>
+              <li>Image-to-image Translation (SDEdit)</li>
+              <li>Inpainting and Shape Completion</li>
+              <li>Visual Illusions & Hybrid Images</li>
+              <li>Flow Matching Models</li>
+            </ul>
+          </div>
+        </section>
+        <hr />
+
+        <section id="part-A">
+          <h2><u>Part A: The Power of Diffusion Models!</u></h2>
+          <p>
+            In part A, we will play with pre-trained diffusion models to perform
+            various image generation tasks and sampling techniques. We will use
+            the
+            <a
+              href="https://huggingface.co/docs/diffusers/api/pipelines/deepfloyd_if"
+              >DeepFloyd IF</a
+            >
+            diffusion model here. All implementations will follow the
+            instructions in the
+            <a
+              href="https://colab.research.google.com/drive/19mp-ssAv3CQuVvFsUu2VvWEwnqLds9gx?usp=sharing"
+              >provided notebook</a
+            >
+            and
+            <a href="https://cal-cs180.github.io/fa25/hw/proj5/parta.html"
+              >project page</a
+            >.
+          </p>
+        </section>
+
+        <section id="part-A-0">
+          <h3><u>A.0: Setup & Play with DeepFloyd</u></h3>
+          <p>
+            Once we have access to DeepFloyd through
+            <a href="https://huggingface.co">Hugging Face</a>, we can start
+            playing with this model by sampling images conditioned on our
+            self-crafted text prompts. The text prompts were encoded via a
+            pre-trained text encoder, in this case, the encoder of a
+            <a href="https://arxiv.org/abs/1910.10683">T5</a> model was used,
+            which embeds each plain text prompt into a $[1, 77, 4096]^{\top}$
+            vector, where $77$ is the maximum token length (sentences longer
+            than this will be truncated) and $4096$ is the embedding dimension.
+            The text embeddings are then fed into the diffusion model to guide
+            the image generation process.
+          </p>
+          <h4><u>Experiment</u>: Effect of <code>num_inference_steps</code></h4>
+          <p>
+            Let's generate some images using DeepFloyd conditioned on some of
+            our text prompts. Recall that the
+            <code>num_inference_steps</code> will affect the quality and
+            diversity of generated images, so here we will explore different
+            values to observe their impact.
+          </p>
+          <p>
+            <em
+              >All Part A experiments were generated using seed=100 (as shown in
+              figures).</em
+            >
+          </p>
+
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a0_seed100_steps10.png"
+                data-full="media/part-a/a0_seed100_steps10.png"
+                alt="seed=100, num_inference_steps=10"
+              />
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a0_seed100_steps100.png"
+                data-full="media/part-a/a0_seed100_steps100.png"
+                alt="seed=100, num_inference_steps=100"
+              />
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a0_seed100_steps999.png"
+                data-full="media/part-a/a0_seed100_steps999.png"
+                alt="seed=100, num_inference_steps=999"
+              />
+            </div>
+          </figure>
+          <p>
+            From the results above, we can see that with a low number of
+            <code>num_inference_steps</code>, e.g., 10, the generated image will
+            be of low quality and may not fully ground on the text prompt. For
+            instance, the The panda's body is in an unnatural posture, and we
+            got $2$ stormtroopers instead of $1$ as specified in the prompt. As
+            we increase the number of inference steps, say, to $100$, the image
+            quality improves significantly and the details align better with the
+            prompt. However, this improvement in quality will have certain
+            marginal benefits, which can be proved by the fact that further
+            increasing the steps to $999$ does not yield a substantial
+            improvement compared to $100$ steps.
+          </p>
+
+          <h4><u>Experiment</u>: Effect of Prompts</h4>
+          <p>
+            Beyound <code>num_inference_steps</code>, text prompts for the same
+            sense of image with varying details will also affect the generated
+            results, so let's try a few different prompts for our panda. One can
+            observe that once the <code>num_inference_steps</code> is set to a
+            reasonably large value (e.g., $500$), the generated images will be
+            well aligned with the prompts, demonstrating the model's strong
+            capability in grounding textual descriptions to visual content.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a0_seed100_steps500_diff_prompts.png"
+                data-full="media/part-a/a0_seed100_steps500_diff_prompts.png"
+                alt="seed=100, num_inference_steps=500, different prompts"
+              />
+            </div>
+          </figure>
+        </section>
+
+        <section id="part-A-1">
+          <h3><u>A.1: Sampling Loops</u></h3>
+          <p>
+            In this part, we will implement our own "sampling loops" that use
+            the pre-trained DeepFloyd denoisers, which should produce
+            high-quality images such as the ones generated before. We will then
+            modify these sampling loops to solve different tasks, such as
+            inpainting or producing optical illusions.
+          </p>
+          <p>
+            Starting with a clean image $x_0$, we can iteratively add noise to
+            an image, obtaining progressively noisier images $x_1, x_2, \ldots,
+            x_t$, until we are left with pure noise at timestep $t=T$, hence,
+            $x_0$ is our clean image, and for larger $t$ more noise is in the
+            image.
+          </p>
+          <p>
+            A diffusion model reverses this process by denoising the image
+            through predicting the noise component given a noisy $x_t$ and the
+            timestep $t$. Each iteration, we can either remove all noise in one
+            step, or remove a small amount of noise, obtaining a slightly
+            cleaner image $x_{t-1}$, and repeat this process until we reach
+            $x_0$. This means we can also start from pure noise $x_T$ and
+            iteratively denoise it to obtain a clean image $x_0$.
+          </p>
+          <p>
+            For the DeepFloyd models, $T=1000$, and the exact amount of noise
+            added at each step is dictated by noise coefficients
+            $\bar{\alpha}_t$, which were chosen by the people who trained the
+            model.
+          </p>
+        </section>
+
+        <section id="part-A-1-1">
+          <h4><u>A.1.1: Forward Process</u></h4>
+          <p>
+            As the key part of diffusion, here we first implement the forward
+            process, i.e., take a clean image and add noise to it, defined by:
+            $$ q(x_t \mid x_0)=\mathcal{N}\left(x_t ; \sqrt{\bar{\alpha}_t} x_0,
+            (1-\bar{\alpha}_t) \mathbf{I}\right), $$ which is equivalent to
+            computing $$ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 -
+            \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, 1). $$
+            Therefore, for a given clean image $x_0$ and timestep $t$, the noisy
+            image $x_t$ can be obtained by sampling $\epsilon$ from a standard
+            normal distribution and adding it to the scaled clean image.
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            The code snippet below shows the implementation of the forward
+            process function, and the
+            <a
+              href="https://cal-cs180.github.io/fa25/hw/proj5/assets/campanile.jpg"
+              >Campanile</a
+            >
+            at noise levels of <code>[250, 500, 750]</code> through the
+            implemented function are also visualized as follows.
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              <code>noisy_im = forward(im, t)</code> function
+            </p>
+            <pre><code class="language-python">def forward(im, t):
+  """
+  Args:
+    im : torch tensor of size (1, 3, 64, 64) representing the clean image
+    t : integer timestep
+
+  Returns:
+    im_noisy : torch tensor of size (1, 3, 64, 64) representing the noisy image at timestep t
+  """
+  with torch.no_grad():
+    # ===== your code here! ====
+    alpha_bar = alphas_cumprod[t].to(im.device).type(im.dtype)
+    w_x0 = torch.sqrt(alpha_bar)
+    w_epsilon = torch.sqrt(1 - alpha_bar)
+    
+    epsilon = torch.randn_like(im)
+    im_noisy = w_x0 * im + w_epsilon * epsilon
+    # ===== end of code ====
+  return im_noisy</code></pre>
+          </figure>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-1_seed100_levels.png"
+                data-full="media/part-a/a1-1_seed100_levels.png"
+                alt="Campanile at t=[0,250,500,750]"
+              />
+            </div>
+            <p>Campanile at <code>t = [0,250,500,750]</code> (seed = 100)</p>
+          </figure>
+        </section>
+
+        <section id="part-A-1-2">
+          <h4><u>A.1.2: Classical Denoising</u></h4>
+          <p>
+            Before denoising with the learned diffusion model, let's first see how classical methods perform. Here, we use <em>Gaussian blur filtering</em> to try to remove the noise in the noisy images that we obtained before. The results images before and after denoising are shown below. In my implementation, I used <code>sigma = 2</code> and <code>kernel_size = 6 * sigma + 1</code> for the Gaussian filter.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-2_seed100_gaussian_denoising.png"
+                data-full="media/part-a/a1-2_seed100_gaussian_denoising.png"
+                alt="Classical Denoising Results"
+              />
+            </div>
+            <p>
+              Classical Denoising Results on Campanile at
+              <code>t = [250,500,750]</code> (seed = 100)
+            </p>
+          </figure>
+        </section>
+
+        <section id="part-A-1-3">
+          <h4><u>A.1.3: One-Step Denoising</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-4">
+          <h4><u>A.1.4: Iterative Denoising</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-5">
+          <h4><u>A.1.5: Diffusion Model Sampling</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-6">
+          <h4><u>A.1.6: Classifier-Free Guidance</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-7">
+          <h4><u>A.1.7: Image-to-image Translation</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-8">
+          <h4><u>A.1.8: Visual Anagrams</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-9">
+          <h4><u>A.1.9: Hybrid Images</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-bw1">
+          <h3><u>B &amp; W: More visual anagrams!</u></h3>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-bw2">
+          <h3><u>B &amp; W: Design a course logo!</u></h3>
+          <p>...</p>
+        </section>
+        <hr />
+
+        <footer>
+          <p>
+            © 2025 ZHOU Guanren |
+            <a href="mailto:guanren_zhou@berkeley.edu">📧 Email</a> |
+            <a
+              href="https://github.com/Nutlettt"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src="../media/github.png"
+                alt="GitHub"
+                style="
+                  width: 16px;
+                  height: 16px;
+                  vertical-align: middle;
+                  margin-right: 4px;
+                "
+              />
+              GitHub
+            </a>
+          </p>
+        </footer>
+      </div>
+    </main>
+
+    <div class="lightbox" id="pg-lightbox">
+      <div class="lb-backdrop"></div>
+      <div class="lb-inner">
+        <img id="lb-img" alt="" />
+        <div class="lb-caption" id="lb-cap"></div>
+        <button class="lb-close" id="lb-close" aria-label="Close">
+          &times;
+        </button>
+      </div>
+    </div>
+    <script>
+      (function () {
+        const sidebar = document.getElementById("sidebar");
+        const overlay = document.getElementById("sidebar-overlay");
+        const sidebarBtn = document.getElementById("sidebar-toggle");
+        function closeSidebar() {
+          sidebar.classList.add("collapsed");
+          overlay.classList.remove("open");
+        }
+        function toggleSidebar() {
+          const collapsed = sidebar.classList.toggle("collapsed");
+          overlay.classList.toggle("open", !collapsed);
+        }
+        sidebarBtn && sidebarBtn.addEventListener("click", toggleSidebar);
+        overlay && overlay.addEventListener("click", closeSidebar);
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") closeSidebar();
+        });
+
+        const themeBtn = document.getElementById("theme-toggle");
+        const root = document.documentElement;
+        const targets = [root, document.body];
+        function applyTheme(t) {
+          root.setAttribute("data-theme", t);
+          document.body.setAttribute("data-theme", t);
+          const darkOn = t === "dark";
+          const classes = ["dark", "dark-theme", "theme-dark", "mode-dark"];
+          classes.forEach((c) => {
+            root.classList.toggle(c, darkOn);
+            document.body.classList.toggle(c, darkOn);
+          });
+          const lightClasses = [
+            "light",
+            "light-theme",
+            "theme-light",
+            "mode-light",
+          ];
+          lightClasses.forEach((c) => {
+            root.classList.toggle(c, !darkOn);
+            document.body.classList.toggle(c, !darkOn);
+          });
+          // highlight.js theme swap
+          const hlLink = document.getElementById("hljs-theme");
+          if (hlLink) {
+            hlLink.href = darkOn
+              ? "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css"
+              : "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css";
+          }
+          localStorage.setItem("theme", t);
+          if (themeBtn)
+            themeBtn.title =
+              "Switch to " + (darkOn ? "light" : "dark") + " theme";
+        }
+        const stored = localStorage.getItem("theme");
+        applyTheme(stored || "light");
+
+        themeBtn &&
+          themeBtn.addEventListener("click", () => {
+            const next =
+              root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            applyTheme(next);
+          });
+
+        window
+          .matchMedia("(prefers-color-scheme: dark)")
+          .addEventListener("change", () => {});
+
+        const lb = document.getElementById("pg-lightbox");
+        if (lb) {
+          const imgEl = document.getElementById("lb-img");
+          const capEl = document.getElementById("lb-cap");
+          const closeBtn = document.getElementById("lb-close");
+          function open(src, cap) {
+            imgEl.src = src;
+            capEl.textContent = cap || "";
+            lb.classList.add("open");
+          }
+          function close() {
+            lb.classList.remove("open");
+            imgEl.src = "";
+          }
+          document.querySelectorAll("img.zoomable").forEach((im) => {
+            im.addEventListener("click", () =>
+              open(im.getAttribute("data-full") || im.src, im.alt)
+            );
+          });
+          lb.addEventListener("click", (e) => {
+            if (e.target === lb || e.target.classList.contains("lb-backdrop"))
+              close();
+          });
+          closeBtn && closeBtn.addEventListener("click", close);
+          document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && lb.classList.contains("open")) close();
+          });
+        }
+      })();
+    </script>
+    <script>
+      window.addEventListener("load", () => {
+        if (!window.hljs) return;
+        document.querySelectorAll("pre code").forEach((block) => {
+          hljs.highlightElement(block);
+        });
+      });
+    </script>
+  </body>
+</html>
