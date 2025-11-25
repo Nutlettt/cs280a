@@ -310,12 +310,13 @@
             As the key part of diffusion, here we first implement the forward
             process, i.e., take a clean image and add noise to it, defined by:
             $$ q(x_t \mid x_0)=\mathcal{N}\left(x_t ; \sqrt{\bar{\alpha}_t} x_0,
-            (1-\bar{\alpha}_t) \mathbf{I}\right), $$ which is equivalent to
+            (1-\bar{\alpha}_t) \mathbf{I}\right)\tag{1}$$ which is equivalent to
             computing $$ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 -
-            \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0, 1). $$
-            Therefore, for a given clean image $x_0$ and timestep $t$, the noisy
-            image $x_t$ can be obtained by sampling $\epsilon$ from a standard
-            normal distribution and adding it to the scaled clean image.
+            \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0,
+            1)\tag{2}$$ Therefore, for a given clean image $x_0$ and timestep
+            $t$, the noisy image $x_t$ can be obtained by sampling $\epsilon$
+            from a standard normal distribution and adding it to the scaled
+            clean image.
           </p>
           <h4>Implementation & Results</h4>
           <p>
@@ -419,7 +420,10 @@
             denoising function we implemented. The results are shown below,
             which demonstrate a significant improvement over classical
             denoising. The pretrained diffusion model effectively recovers much
-            of the lost detail and structure in the images.
+            of the lost detail and structure in the images. However, with the
+            increase of noise level, some artifacts start to appear in this
+            one-step approach, indicating that a single denoising step may not
+            be sufficient for very noisy images.
           </p>
           <figure class="figure-center">
             <div>
@@ -439,7 +443,192 @@
 
         <section id="part-A-1-4">
           <h4><u>A.1.4: Iterative Denoising</u></h4>
-          <p>...</p>
+          <p>
+            In part A.1.3, we saw that one-step denoising by the diffusion model
+            does a much better job than classical approaches such as Gaussian
+            blur. However, we also noticed that it does get worse as we add more
+            noise, which makes sense, as the problem is much harder with more
+            noise!
+          </p>
+          <p>
+            To address this, recall that diffusion models are designed to
+            denoise iteratively, so here we implement an iterative denoising
+            loop that gradually removes noise over multiple steps.
+          </p>
+          <p>
+            In theory, we could start with $x_{1000}$ at timestep $T=1000$,
+            denoise one step each iteration, and carry on until we reach $x_0$.
+            However, such a long chain will hinder efficiency, so instead, we
+            can actually speed things up by skipping steps, whose theoretical
+            foundation can be found in
+            <a href="https://yang-song.net/blog/2021/score/">this article</a>.
+          </p>
+          <p>
+            To skip steps, we can define a new list of timesteps called
+            <code>strided_timesteps</code>, which is a subset of the original
+            timesteps, hence, <code>strided_timesteps[0]</code> corresponds to
+            the largest $t$ (and thus the noisiest image), and
+            <code>strided_timesteps[-1]</code> corresponds to $t=0$ (the clean
+            image). In my implementation, the stride was set to $30$.
+          </p>
+          <p>
+            On the <code>i</code>th step, i.e.,
+            $t=$<code>strided_timesteps[i]</code>, we denoise the image to
+            obtain a less noisy image $t'=$<code>strided_timesteps[i+1]</code>,
+            the calculation follows: $$ x_{t'} =
+            \frac{\sqrt{\bar\alpha_{t'}}\beta_t}{1 - \bar\alpha_t} x_0 +
+            \frac{\sqrt{\alpha_t}(1 - \bar\alpha_{t'})}{1 - \bar\alpha_t} x_t +
+            v_\sigma\tag{3} $$ where:
+          </p>
+          <ul>
+            <li>$x_t$ is your image at timestep $t$</li>
+            <li>
+              $x_{t'}$ is your noisy image at timestep $t'$ where $t' < t$ (less
+              noisy)
+            </li>
+            <li>
+              $\bar\alpha_t$ is defined by `alphas_cumprod`, as explained above.
+            </li>
+            <li>$\alpha_t = \bar\alpha_t / \bar\alpha_{t'}$</li>
+            <li>$\beta_t = 1 - \alpha_t$</li>
+            <li>
+              $x_0$ is our current estimate of the clean image (computed using
+              the one-step denoising formula from the previous section).
+            </li>
+          </ul>
+          <p>
+            The $v_{\sigma}$ is the additional noise term predicted by
+            DeepFloyd, added via the provided
+            <code>add_variance</code> function.
+          </p>
+
+          <h4>Implementation & Results</h4>
+          <p>
+            Here we first create the <code>strided_timesteps</code> by the
+            following snippet:
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              create <code>strided_timesteps</code>
+            </p>
+            <pre><code class="language-python">strided_timesteps = list(range(990, -1, -30))</code></pre>
+          </figure>
+          <p></p>
+          <p>
+            Then, starting with the given function framework in the notebook, we
+            can implement the iterative denoising loop, as shown below.
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              complete <code>iterative_denoise</code>
+            </p>
+            <pre><code class="language-python">def iterative_denoise(im_noisy, i_start, prompt_embeds, timesteps, display=True):
+  # ==== my modifications ====
+  image = im_noisy.to(device).half()
+  prompt_embeds = prompt_embeds.half().to(device)
+  intermediate_img_t = []
+  # ==== end of modifications ====
+
+  with torch.no_grad():
+    for i in range(i_start, len(timesteps) - 1):
+      # Get timesteps
+      t = timesteps[i]
+      prev_t = timesteps[i+1]
+
+      # get `alpha_cumprod` and `alpha_cumprod_prev` for timestep t from `alphas_cumprod`
+      # compute `alpha`
+      # compute `beta`
+      # ===== your code here! =====
+      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
+      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
+      alpha = alpha_cumprod / alpha_cumprod_prev
+      beta = 1 - alpha
+      # ==== end of code ====
+
+      # Get noise estimate
+      model_output = stage_1.unet(
+          image,
+          t,
+          encoder_hidden_states=prompt_embeds,
+          return_dict=False
+      )[0]
+
+      # Split estimate into noise and variance estimate
+      noise_est, predicted_variance = torch.split(model_output, image.shape[1], dim=1)
+
+      # compute `pred_prev_image` (x_{t'}), the DDPM estimate for the image at the
+      # next timestep, which is slightly less noisy. Use the equation 3.
+      # This is the core of DDPM
+      # ===== your code here! =====
+      # compute `x_0` using one-step denoising
+      x_t = image
+      w_xt = 1 / torch.sqrt(alpha_cumprod)
+      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
+      x_0 = w_xt * x_t - w_sigma * noise_est
+      
+      # compute `pred_prev_image` (x_{t'})
+      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
+      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
+      xt_prev = w_x0 * x_0 + w_xt * x_t
+      pred_prev_image = add_variance(predicted_variance, t, xt_prev)
+      
+      # store every 5th loop of denoising
+      if i % 5 == 0 and display:
+        intermediate_img_t.append((pred_prev_image,t))
+      # ==== end of code ====
+
+      image = pred_prev_image
+
+    clean = image.cpu().detach().numpy()
+
+  # ==== my modifications ====
+  if display:
+    return clean, intermediate_img_t
+  else:
+    return clean
+  # ==== end of modifications ====</code></pre>
+          </figure>
+          <p>
+            With <code>i_start = 10</code>, the noisy Campanile every $5$th loop
+            of denoising is shown below, where we can see that they becomes
+            gradually cleaner.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-4_seed100_iterative_denoising_intermediates.png"
+                data-full="media/part-a/a1-4_seed100_iterative_denoising_intermediates.png"
+                alt="Iterative Denoising Intermediate Steps"
+              />
+            </div>
+            <figurecaption>
+              Iterative Denoising Intermediate Steps on Campanile with
+              <code>i_start = 10</code> (seed = 100)
+            </figurecaption>
+          </figure>
+          <p>
+            As a comparison, the original image and final denoised images after
+            the aforementioned approaches are shown below, and we can see that
+            the iterative denoising produces the best results, effectively
+            recovering fine details and structure from the noisy input.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-4_seed100_denoising_comparison.png"
+                data-full="media/part-a/a1-4_seed100_denoising_comparison.png"
+                alt="Final Denoising Comparison"
+              />
+            </div>
+            <figurecaption>
+              Final Denoising Comparison on Campanile at
+              <code>i_start = 10</code> (seed = 100)
+            </figurecaption>
+          </figure>
         </section>
 
         <section id="part-A-1-5">
