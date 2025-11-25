@@ -99,6 +99,18 @@
               <li>
                 <a href="#part-A-1-7">A.1.7: Image-to-image Translation</a>
               </li>
+              <li>
+                <a href="#part-A-1-7-1"
+                  >A.1.7.1: Editing Hand-Drawn and Web Images</a
+                >
+              </li>
+              <li><a href="#part-A-1-7-2">A.1.7.2: Inpainting</a></li>
+              <li>
+                <a href="#part-A-1-7-3"
+                  >A.1.7.3: Text-Conditional Image-to-image Translation</a
+                >
+              </li>
+
               <li><a href="#part-A-1-8">A.1.8: Visual Anagrams</a></li>
               <li><a href="#part-A-1-9">A.1.9: Hybrid Images</a></li>
               <li>
@@ -817,6 +829,92 @@
 
         <section id="part-A-1-7">
           <h4><u>A.1.7: Image-to-image Translation</u></h4>
+          <p>
+            The diffusion model can also be used to edit images, as we already
+            saw in part 1.4 when we add noise to an image and then denoise it.
+            This works because the diffusion model has to "hallucinate" new
+            things to fill in the missing details in the noised image, hence,
+            the model has to be "creative" and force the noisy image back onto
+            the manifold of natural images during denoising.
+          </p>
+          <p>
+            Here, we will follow the
+            <a href="https://sde-image-editing.github.io/">SDEdit</a> algorithm
+            to perform such image-to-image translation. The idea is we first add
+            some noise to the original image (by <code>forward</code>), and then
+            denoise it back with the diffusion model without extra text
+            conditioning (i.e., via
+            <code>iterative_denoise_cfg</code> conditioned on "a high quality
+            photo"). The reconstructed image then becomes an edited version of
+            the original image, which may look like the original image, but with
+            some details "edited".
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            Conditioned on the prompt "a high quality photo" and with CFG scale
+            of 7, here we edit the Campanile image and 2 cat images at noise
+            levels of <code>i_start = [1, 3, 5, 7, 10, 20]</code>. Since the
+            higher <code>i_start</code>, the less noise is added, hence, the
+            edited image will look more similar to the original image. The
+            results are shown below.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-7_sdedit_campanile_seed100.png"
+                data-full="media/part-a/a1-7_sdedit_campanile_seed100.png"
+                alt="Image-to-Image Translation Results: Campanile"
+              />
+            </div>
+            <figcaption>
+              SDEdit on Campanile at
+              <code>i_start = [1,3,5,7,10,20]</code> (seed = 100)
+            </figcaption>
+          </figure>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-7_sdedit_cat1_seed100.png"
+                data-full="media/part-a/a1-7_sdedit_cat1_seed100.png"
+                alt="Image-to-Image Translation Results: Cat 1"
+              />
+            </div>
+            <figcaption>
+              SDEdit on Cat 1 at
+              <code>i_start = [1,3,5,7,10,20]</code> (seed = 100)
+            </figcaption>
+          </figure>
+
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-7_sdedit_cat2_seed100.png"
+                data-full="media/part-a/a1-7_sdedit_cat2_seed100.png"
+                alt="Image-to-Image Translation Results: Cat 2"
+              />
+            </div>
+            <figcaption>
+              SDEdit on Cat 2 at
+              <code>i_start = [1,3,5,7,10,20]</code> (seed = 100)
+            </figcaption>
+          </figure>
+        </section>
+
+        <section id="part-A-1-7-1">
+          <h4><u>A.1.7.1: Editing Hand-Drawn and Web Images</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-7-2">
+          <h4><u>A.1.7.2: Inpainting</u></h4>
+          <p>...</p>
+        </section>
+
+        <section id="part-A-1-7-3">
+          <h4><u>A.1.7.3: Text-Conditional Image-to-image Translation</u></h4>
           <p>...</p>
         </section>
 
