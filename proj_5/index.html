@@ -363,7 +363,9 @@
                 alt="Campanile at t=[0,250,500,750]"
               />
             </div>
-            <p>Campanile at <code>t = [0,250,500,750]</code> (seed = 100)</p>
+            <figcaption>
+              Campanile at <code>t = [0,250,500,750]</code> (seed = 100)
+            </figcaption>
           </figure>
         </section>
 
@@ -392,10 +394,10 @@
                 alt="Classical Denoising Results"
               />
             </div>
-            <p>
+            <figcaption>
               Classical Denoising Results on Campanile at
               <code>t = [250,500,750]</code> (seed = 100)
-            </p>
+            </figcaption>
           </figure>
         </section>
 
@@ -411,7 +413,7 @@
           <p>
             For matching the input format of the model, since it was trained
             with text conditioning, we provide the embedding of the prompt "a
-            high-quality photo" as a neutral conditioning.
+            high quality photo" as a neutral conditioning.
           </p>
           <h4>Implementation & Results</h4>
           <p>
@@ -604,10 +606,10 @@
                 alt="Iterative Denoising Intermediate Steps"
               />
             </div>
-            <figurecaption>
+            <figcaption>
               Iterative Denoising Intermediate Steps on Campanile with
               <code>i_start = 10</code> (seed = 100)
-            </figurecaption>
+            </figcaption>
           </figure>
           <p>
             As a comparison, the original image and final denoised images after
@@ -624,21 +626,193 @@
                 alt="Final Denoising Comparison"
               />
             </div>
-            <figurecaption>
+            <figcaption>
               Final Denoising Comparison on Campanile at
               <code>i_start = 10</code> (seed = 100)
-            </figurecaption>
+            </figcaption>
           </figure>
         </section>
 
         <section id="part-A-1-5">
           <h4><u>A.1.5: Diffusion Model Sampling</u></h4>
-          <p>...</p>
+          <p>
+            Diffusion models can not only denoise images, but also able to
+            generate images from scratch by starting from pure noise, i.e.,
+            setting <code>i_start = 0</code> and passing random noise as our
+            <code>im_noisy</code> to our
+            <code>iterative_denoise</code> function. Recall that DeepFloyd
+            requires text conditioning as input, here we use a neutral prompt "a
+            high quality photo" again.
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            To sample images from scratch, we can generate random noise of shape
+            $(1,3,64,64)$ via
+            <code>im_noisy = torch.randn(1, 3, 64, 64).half().to(device)</code>,
+            and pass it to our <code>iterative_denoise</code> function with
+            <code>i_start = 0</code> and embedding of the neutral prompt. For
+            reproducibility purposes, I sample images with
+            <code>seeds = [0, 1, 3, 4, 5]</code>, each of which produces a
+            distinct image as shown below.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-5_samples.png"
+                data-full="media/part-a/a1-5_samples.png"
+                alt="Diffusion Model Sampling Results"
+              />
+            </div>
+            <figcaption>
+              Diffusion Model Sampling Results with
+              <code>seeds = [0,1,3,4,5]</code>
+            </figcaption>
+          </figure>
+          <p>
+            Obviously, the sampled images are of high quality and look like real
+            photos, hence, they lie on the natural image manifold somehow.
+            However, some of them still look a bit strange and unnatural. We
+            will fix this issue in the next part with CFG!
+          </p>
         </section>
 
         <section id="part-A-1-6">
           <h4><u>A.1.6: Classifier-Free Guidance</u></h4>
-          <p>...</p>
+          <p>
+            As we noticed in the previous part that some of the generated images
+            are not very good and even completely non-sensical, here we improve
+            the quality (at the expense of image diversity) with a technique
+            called
+            <a href="https://arxiv.org/abs/2207.12598"
+              >Classifier-Free Guidance (CFG)</a
+            >, where we compute both a conditional ($\epsilon_c$) and an
+            unconditional ($\epsilon_u$) noise estimate through: $$ \epsilon =
+            \epsilon_u + \gamma(\epsilon_c - \epsilon_u)\tag{4} $$ where
+            $\gamma$ controls the strength of CFG. From the equation, we can see
+            that $\gamma=0$ corresponds to an unconditional noise estimate, and
+            $\gamma=1$ corresponds to a conditional noise estimate. By setting
+            $\gamma > 1$, we can push the noise estimate further towards the
+            conditional direction, which encourages the model to generate images
+            that better align with the text prompt, hence improving quality.
+            More details can be found in
+            <a href="https://sander.ai/2022/05/26/guidance.html"
+              >this blog post</a
+            >.
+          </p>
+          <p>
+            In practice, the "unconditional" embedding corresponds to an empty
+            prompt, i.e., "". Then, our previous "a high quality photo" prompt
+            becomes a condition, even though it is still weak and neutral. We
+            will use CFG with $\gamma=7$ all throughout all Part A experiments
+            starting from here.
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            Implementation of CFG is straightforward, we just need to modify our
+            <code>iterative_denoise</code> function to compute both conditional
+            and unconditional noise estimates, and combine them via equation
+            (4). The modified code snippet is shown below.
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              implement CFG in <code>iterative_denoise</code>
+            </p>
+            <pre><code class="language-python">def iterative_denoise_cfg(im_noisy, i_start, prompt_embeds, uncond_prompt_embeds, timesteps, scale=7, display=True):
+  # ==== my modifications ====
+  image = im_noisy.half().to(device)
+  prompt_embeds = prompt_embeds.half().to(device)
+  uncond_prompt_embeds = uncond_prompt_embeds.half().to(device)
+  # ==== end of modifications ====
+
+  with torch.no_grad():
+    for i in range(i_start, len(timesteps) - 1):
+      # Get timesteps
+      t = timesteps[i]
+      prev_t = timesteps[i+1]
+
+      # Get `alpha_cumprod`, `alpha_cumprod_prev`, `alpha`, `beta`
+      # ===== your code here! =====
+      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
+      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
+      alpha = alpha_cumprod / alpha_cumprod_prev
+      beta = 1 - alpha
+      # ==== end of code ====
+
+      # Get cond noise estimate
+      model_output = stage_1.unet(
+          image,
+          t,
+          encoder_hidden_states=prompt_embeds,
+          return_dict=False
+      )[0]
+
+      # Get uncond noise estimate
+      uncond_model_output = stage_1.unet(
+          image,
+          t,
+          encoder_hidden_states=uncond_prompt_embeds,
+          return_dict=False
+      )[0]
+
+      # Split estimate into noise and variance estimate
+      noise_est, predicted_variance = torch.split(model_output, image.shape[1], dim=1)
+      uncond_noise_est, _ = torch.split(uncond_model_output, image.shape[1], dim=1)
+
+      # Compute the CFG noise estimate based on equation 4
+      # ===== your code here! =====
+      epsilon_u = uncond_noise_est
+      epsilon_c = noise_est
+      epsilon = epsilon_u + scale * (epsilon_c - epsilon_u)
+      # ==== end of code ====
+
+
+      # Get `pred_prev_image`, the next less noisy image.
+      # ===== your code here! =====
+      # compute `x_0` using one-step denoising
+      x_t = image
+      w_xt = 1 / torch.sqrt(alpha_cumprod)
+      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
+      x_0 = w_xt * x_t - w_sigma * epsilon # use cfg epsilon here
+      
+      # compute `pred_prev_image` (x_{t'})
+      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
+      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
+      xt_prev = w_x0 * x_0 + w_xt * x_t
+      pred_prev_image = add_variance(predicted_variance, t, xt_prev)
+      # ==== end of code ====
+
+      image = pred_prev_image
+
+    clean = image.cpu().detach().numpy()
+
+    return clean</code></pre>
+          </figure>
+          <p>
+            With CFG, let's again sample some images from scratch and see how it
+            improves the quality. Here I picked
+            <code>seeds = [0, 2, 3, 4, 5]</code> and set <code>scale = 7</code>.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/a1-6_cfg_samples.png"
+                data-full="media/part-a/a1-6_cfg_samples.png"
+                alt="CFG Sampling Results"
+              />
+            </div>
+            <figcaption>
+              CFG Sampling Results with
+              <code>seeds = [0,2,3,4,5]</code>, &nbsp;
+              <code>scale = 7</code>
+            </figcaption>
+          </figure>
+          <p>
+            The results above look much better than those without CFG, all of
+            which now look like real photos and nothing non-sensical!
+          </p>
         </section>
 
         <section id="part-A-1-7">
