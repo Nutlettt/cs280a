@@ -1188,7 +1188,160 @@
 
         <section id="part-A-1-8">
           <h4><u>A.1.8: Visual Anagrams</u></h4>
-          <p>...</p>
+          <p>
+            In this part, we will implement the
+            <a href="https://dangeng.github.io/visual_anagrams/"
+              >Visual Anagrams</a
+            >
+            and create optical illusions with diffusion models. The idea is to
+            generate an image that can be interpreted in two different ways
+            before and after some orthogonal transformations (e.g., flipping,
+            rotation, etc.).
+          </p>
+          <p>
+            To achieve this, we will denoise an image $x_t$ at step $t$ normally
+            with the prompt $p_1$, to obtain noise estimate $\epsilon_1$. But at
+            the same time, we will apply the orthogonal transformation to $x_t$
+            and denoise with the prompt $p_2$ to get noise estimate
+            $\epsilon_2$, after which, we transform $\epsilon_2$ back to the
+            original orientation. Finally, we can perform a reverse/denoising
+            step with the averaged noise estimate. The full algorithm is:
+            $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$ $$\epsilon_2 =
+            \text{transform}(\text{CFG of UNet}(\text{transform}(x_t), t,
+            p_2))$$ $$\epsilon = (\epsilon_1 + \epsilon_2) / 2$$ where the UNet
+            is the diffusion model NNet from before, $\text{transform}(\cdot)$
+            is the orthogonal transformation function, and $p_1$ and $p_2$ are
+            two different text prompt embeddings, and $\epsilon$ is our final
+            noise estimate.
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            There are multiple orthogonal transformations we can use, here I
+            implement the $\text{flip}(\cdot)$ function that flips the image
+            both horizontally and vertically, i.e., a 180-degree rotation. The
+            code snippet of the modified denoising function is shown below.
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              implement Visual Anagrams in
+              <code>iterative_denoise_visual_anagrams</code>
+            </p>
+            <pre><code class="language-python">def make_flip_illusion(image, i_start, prompt_embeds, uncond_prompt_embeds, timesteps, scale=7, display=True):
+  # initialize inputs
+  image = image.half().to(device)
+  # two prompt embeddings
+  prompt_embeds_1, prompt_embeds_2 = prompt_embeds[:]
+  prompt_embeds_1 = prompt_embeds_1.half().to(device)
+  prompt_embeds_2 = prompt_embeds_2.half().to(device)
+  uncond_prompt_embeds = uncond_prompt_embeds.half().to(device)
+
+  with torch.no_grad():
+    for i in range(i_start, len(timesteps)-1):
+      # get timesteps
+      t = timesteps[i]
+      prev_t = timesteps[i+1]
+
+      # get 'alpha_cumprod', 'alpha_cumprod_prev', 'alpha', 'beta'
+      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
+      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
+      alpha = alpha_cumprod / alpha_cumprod_prev
+      beta = 1 - alpha
+
+      ## prompt 1 (no flip)
+      # get cond noise estimate
+      model_output_1 = stage_1.unet(
+        image,
+        t,
+        encoder_hidden_states=prompt_embeds_1,
+        return_dict=False
+      )[0]
+      noise_est_1, predicted_variance_1 = torch.split(model_output_1, image.shape[1], dim=1)
+
+      # uncond noise estimate
+      uncond_model_output_1 = stage_1.unet(
+        image,
+        t,
+        encoder_hidden_states=uncond_prompt_embeds,
+        return_dict=False
+      )
+      uncond_noise_est_1, _ = torch.split(uncond_model_output_1[0], image.shape[1], dim=1)
+
+      ## prompt 2 (flipped)
+      # flip image both horizontally and vertically
+      image_flipped = torch.flip(image, dims=[2,3])
+      # get cond noise estimate
+      model_output_2 = stage_1.unet(
+        image_flipped,
+        t,
+        encoder_hidden_states=prompt_embeds_2,
+        return_dict=False
+      )[0]
+      noise_est_2, _ = torch.split(model_output_2, image.shape[1], dim=1)
+
+      # uncond noise estimate
+      uncond_model_output_2 = stage_1.unet(
+        image_flipped,
+        t,
+        encoder_hidden_states=uncond_prompt_embeds,
+        return_dict=False
+      )
+      uncond_noise_est_2, _ = torch.split(uncond_model_output_2[0], image.shape[1], dim=1)
+      
+      # compute the CFG noise estimates for both prompts
+      epsilon_u1 = uncond_noise_est_1
+      epsilon_u2 = uncond_noise_est_2
+      epsilon_c1 = noise_est_1
+      epsilon_c2 = noise_est_2
+      epsilon_1 = epsilon_u1 + scale * (epsilon_c1 - epsilon_u1)
+      epsilon_2 = epsilon_u2 + scale * (epsilon_c2 - epsilon_u2)
+      # flip epsilon_2 back
+      epsilon_2 = torch.flip(epsilon_2, dims=[2,3])
+      # average the two epsilons
+      epsilon = (epsilon_1 + epsilon_2) / 2.0
+
+      # Get `pred_prev_image`, the next less noisy image.
+      # compute `x_0` using one-step denoising
+      x_t = image
+      w_xt = 1 / torch.sqrt(alpha_cumprod)
+      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
+      x_0 = w_xt * x_t - w_sigma * epsilon # use cfg epsilon here
+      
+      # compute `pred_prev_image` (x_{t'})
+      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
+      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
+      xt_prev = w_x0 * x_0 + w_xt * x_t
+      pred_prev_image = add_variance(predicted_variance_1, t, xt_prev)
+
+      image = pred_prev_image
+
+    clean = image.cpu().detach().numpy()
+
+    return clean</code></pre>
+          </figure>
+          <p>
+            Two example visual anagrams created with the above function are shown below. In both cases, the images can be interpreted as different scenes before and after a 180-degree rotation (animated as follows). They are sampled with <code>seed = 28</code> and <code>seed = 2</code>, respectively.
+          </p>
+          <div class="anagrams-grid">
+            <div class="anagram-item" data-transform="rotate-180" data-interval="5000">
+              <div class="anagram-frame">
+                <img src="media/part-a/a1-8_flip_illusion_1_seed28.png" alt="Visual Anagram 1" class="zoomable">
+              </div>
+              <div class="anagram-prompts">
+                <p class="anagram-prompt">an oil painting of people around a campfire</p>
+                <p class="anagram-prompt">a photo of a volcano</p>
+              </div>
+            </div>
+            <div class="anagram-item" data-transform="rotate-180" data-interval="5000">
+              <div class="anagram-frame">
+                <img src="media/part-a/a1-8_flip_illusion_2_seed2.png" alt="Visual Anagram 2" class="zoomable">
+              </div>
+              <div class="anagram-prompts">
+                <p class="anagram-prompt">a watercolor painting of flower arrangements</p>
+                <p class="anagram-prompt">a photo of a dress</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="part-A-1-9">
@@ -1348,5 +1501,6 @@
         });
       });
     </script>
+    <script src="anagrams.js"></script>
   </body>
 </html>

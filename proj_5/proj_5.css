@@ -874,3 +874,133 @@ code.hljs {
     width: 100%;
   }
 }
+
+/* === Visual Anagrams animated grid === */
+.anagrams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 40px;
+  margin: 2rem auto;
+  max-width: 1000px;
+  padding: 10px 10px;
+}
+
+.anagram-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.anagram-frame {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1 / 1;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--card-line, #d0d7de);
+  background: var(--card-bg, #fff);
+}
+
+:root[data-theme="dark"] .anagram-frame {
+  background: #0d1117;
+  border-color: #30363d;
+}
+
+.anagram-frame img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: transparent;
+}
+
+/* Rotation animation states */
+.anagram-frame.rotate-180 img {
+  transform: rotate(180deg);
+}
+
+.anagram-frame.rotate-90 img {
+  transform: rotate(90deg);
+}
+
+.anagram-frame.rotate-270 img {
+  transform: rotate(270deg);
+}
+
+.anagram-frame.flip-h img {
+  transform: scaleX(-1);
+}
+
+.anagram-frame.flip-v img {
+  transform: scaleY(-1);
+}
+
+/* Prompt display with fade transition */
+.anagram-prompts {
+  text-align: center;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  position: relative;
+  width: 100%;
+}
+
+.anagram-prompt {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted, #57606a);
+  opacity: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  transition: opacity 0.5s ease;
+  white-space: normal;
+  max-width: 100%;
+}
+
+:root[data-theme="dark"] .anagram-prompt {
+  color: #8b949e;
+}
+
+.anagram-prompt.active {
+  opacity: 1;
+}
+
+.anagram-prompt strong {
+  color: var(--accent, #2563eb);
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .anagram-prompt strong {
+  color: #58a6ff;
+}
+
+/* Mobile adjustments */
+@media (max-width: 680px) {
+  .anagrams-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 20px 10px;
+  }
+  
+  .anagram-frame {
+    max-width: 100%;
+  }
+  
+  .anagram-prompt {
+    font-size: 0.85rem;
+  }
+}
+
+/* Pause animation on hover (optional) */
+.anagram-item:hover .anagram-frame img {
+  animation-play-state: paused;
+}
