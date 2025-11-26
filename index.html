@@ -1,101 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>CS280A Course Projects - ZHOU Guanren</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- external stylesheet -->
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>CS280A Course Projects - ZHOU Guanren</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- external stylesheet -->
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Top Navbar -->
+    <nav class="top-navbar">
+      <div class="navbar-left">
+        <span class="breadcrumb">CS280A</span>
+      </div>
+      <div class="navbar-right">
+        <button
+          id="theme-toggle"
+          class="top-icon-btn"
+          aria-label="Toggle color theme"
+          title="Toggle color theme"
+        >
+          🌓
+        </button>
+      </div>
+    </nav>
 
-  <!-- Top Navbar -->
-  <nav class="top-navbar">
-    <div class="navbar-left">
-      <span class="breadcrumb">CS280A</span>
-    </div>
-    <div class="navbar-right">
-      <button id="theme-toggle" class="top-icon-btn" aria-label="Toggle color theme" title="Toggle color theme">🌓</button>
-    </div>
-  </nav>
+    <!-- header -->
+    <header>
+      <h1>CS280A: Intro to Computer Vision and Computational Photography</h1>
+      <h2>Course Projects of ZHOU Guanren (周冠人)</h2>
+    </header>
 
-  <!-- header -->
-  <header>
-    <h1>CS280A: Intro to Computer Vision and Computational Photography</h1>
-    <h2>Course Projects of ZHOU Guanren (周冠人)</h2>
-  </header>
+    <!-- Projects -->
+    <main>
+      <h2>List of Projects:</h2>
 
-  <!-- Projects -->
-  <main>
-    <h2>List of Projects:</h2>
-
-    <div class="project-cards">
-      <!-- Project 0 Card -->
-      <div class="card project-card">
-        <div class="project-img">
-          <img class="responsive" src="proj_0/media/x100vi.jpeg" alt="Guanren's Fujifilm X100VI">
+      <div class="project-cards">
+        <!-- Project 0 Card -->
+        <div class="card project-card">
+          <div class="project-img">
+            <img
+              class="responsive"
+              src="proj_0/media/x100vi.jpeg"
+              alt="Guanren's Fujifilm X100VI"
+            />
+          </div>
+          <div class="project-info">
+            <h3>
+              <a href="proj_0/index.html"
+                >Project 0: Becoming Friends with Your Camera</a
+              >
+            </h3>
+            <p>
+              Exploring the subtle relationship between perspective, focal
+              length/zoom, and the center of projection through some sample
+              photos and visual results. (Unfortunately, my Fujifilm X100VI,
+              attached left, is a fixed focus camera, so I have to do it with my
+              iPhone. 😢)
+            </p>
+          </div>
         </div>
-        <div class="project-info">
-          <h3><a href="proj_0/index.html">Project 0: Becoming Friends with Your Camera</a></h3>
-          <p>Exploring the subtle relationship between perspective, focal length/zoom, and the center of projection through some sample photos and visual 
-            results. (Unfortunately, my Fujifilm X100VI, attached left, is a fixed focus camera, so I have 
-            to do it with my iPhone. 😢)</p>
+        <!-- Project 1 Card -->
+        <div class="card project-card">
+          <div class="project-img">
+            <img
+              class="responsive"
+              src="proj_1/media/example/emir_true.png"
+              alt="Prokudin-Gorskii colorized example"
+            />
+          </div>
+          <div class="project-info">
+            <h3>
+              <a href="proj_1/index.html"
+                >Project 1: Colorizing the Prokudin-Gorskii Photo Collection</a
+              >
+            </h3>
+            <p>
+              Reconstructing color images by aligning RGB channels from glass
+              plate negatives. Includes exhaustive search and image pyramid
+              alignment, plus automatic cropping, white balance, color
+              remapping, and contrast.
+            </p>
+          </div>
+        </div>
+        <!-- Project 2 Card -->
+        <div class="card project-card">
+          <div class="project-img">
+            <img
+              class="responsive"
+              src="proj_2/media/output/hybrid1.png"
+              alt="hybrid image"
+            />
+          </div>
+          <div class="project-info">
+            <h3>
+              <a href="proj_2/index.html"
+                >Project 2: Fun with Filters and Frequencies!</a
+              >
+            </h3>
+            <p>
+              Implement 2D convolution from scratch and explore various filters
+              and the mathematical properties of convolution operation. Then
+              apply the convolution and filtering techniques, together with
+              knowledge of frequencies, to achieve and visualize various
+              interesting image processing tasks.
+            </p>
+          </div>
+        </div>
+        <!-- Project 3 Card -->
+        <div class="card project-card">
+          <div class="project-img">
+            <img
+              class="responsive"
+              src="proj_3/media/rectified_bridge.jpeg"
+              alt="Rectified Bridge Photo"
+            />
+          </div>
+          <div class="project-info">
+            <h3>
+              <a href="proj_3/index.html"
+                >Project 3: [Auto] Stitching and Photo Mosaics</a
+              >
+            </h3>
+            <p>
+              Exploring image transformation and warping techniques, recovering
+              homographies from hand-crafted correspondences, and using them to
+              warp and blend images into a seamless mosaic, which is further
+              automated through feature-based methods.
+            </p>
+          </div>
+        </div>
+
+        <!-- Project 4 Card -->
+        <div class="card project-card">
+          <div class="project-img">
+            <img
+              class="responsive"
+              src="proj_4/media/part_2/labubu/labubu.gif"
+              alt="Labubu"
+            />
+          </div>
+          <div class="project-info">
+            <h3>
+              <a href="proj_4/index.html"
+                >Project 4: Neural Radiance Field (NeRF)</a
+              >
+            </h3>
+            <p>
+              Implementing a Neural Radiance Field (NeRF) for 3D scene
+              reconstruction from multi-view images.
+            </p>
+          </div>
+        </div>
+
+        <!-- Project 5 Card -->
+        <div class="card project-card">
+          <div class="project-img">
+            <img
+              class="responsive"
+              src="proj_5/media/part-a/a1-9_hybrid_2_seed36.png"
+              alt="Labubu"
+            />
+          </div>
+          <div class="project-info">
+            <h3>
+              <a href="proj_5/index.html"
+                >Project 5: Fun with Diffusion Models!</a
+              >
+            </h3>
+            <p>
+              Exploring diffusion models for generative image tasks and
+              implement our own flow matching model.
+            </p>
+          </div>
         </div>
       </div>
-      <!-- Project 1 Card -->
-      <div class="card project-card">
-        <div class="project-img">
-          <img class="responsive" src="proj_1/media/example/emir_true.png" alt="Prokudin-Gorskii colorized example">
-        </div>
-        <div class="project-info">
-          <h3><a href="proj_1/index.html">Project 1: Colorizing the Prokudin-Gorskii Photo Collection</a></h3>
-          <p>Reconstructing color images by aligning RGB channels from glass plate negatives. Includes exhaustive search and image pyramid alignment, plus automatic cropping, white balance, color remapping, and contrast.</p>
-        </div>
-      </div>
-      <!-- Project 2 Card -->
-      <div class="card project-card">
-        <div class="project-img">
-          <img class="responsive" src="proj_2/media/output/hybrid1.png" alt="hybrid image">
-        </div>
-        <div class="project-info">
-          <h3><a href="proj_2/index.html">Project 2: Fun with Filters and Frequencies!</a></h3>
-          <p>Implement 2D convolution from scratch and explore various filters and the mathematical properties of convolution operation. Then apply the convolution and filtering techniques, together with knowledge of frequencies, to achieve and visualize various interesting image processing tasks.</p>
-        </div>
-      </div>
-      <!-- Project 3 Card -->
-      <div class="card project-card">
-        <div class="project-img">
-          <img class="responsive" src="proj_3/media/rectified_bridge.jpeg" alt="Rectified Bridge Photo">
-        </div>
-        <div class="project-info">
-          <h3><a href="proj_3/index.html">Project 3: [Auto] Stitching and Photo Mosaics</a></h3>
-          <p>Exploring image transformation and warping techniques, recovering homographies from hand-crafted correspondences, and using them to warp and blend images into a seamless mosaic, which is further automated through feature-based methods.</p>
-        </div>
-      </div>
+    </main>
 
-      <!-- Project 4 Card -->
-      <div class="card project-card">
-        <div class="project-img">
-          <img class="responsive" src="proj_4/media/part_2/labubu/labubu.gif" alt="Labubu">
-        </div>
-        <div class="project-info">
-          <h3><a href="proj_4/index.html">Project 4: Neural Radiance Field (NeRF)</a></h3>
-          <p>Implementing a Neural Radiance Field (NeRF) for 3D scene reconstruction from multi-view images.</p>
-        </div>
-      </div>
-    </div>
-  </main>
+    <!-- footer -->
+    <footer>
+      <p>
+        © 2025 ZHOU Guanren |
+        <a href="mailto:guanren_zhou@berkeley.edu">📧 Email</a> |
+        <a
+          href="https://github.com/Nutlettt"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="./media/github.png"
+            alt="GitHub"
+            style="width: 16px; height: 16px"
+          />
+          GitHub</a
+        >
+      </p>
+    </footer>
 
-  <!-- footer -->
-  <footer>
-    <p>© 2025 ZHOU Guanren |
-      <a href="mailto:guanren_zhou@berkeley.edu">📧 Email</a> |
-      <a href="https://github.com/Nutlettt" target="_blank" rel="noopener noreferrer"> 
-        <img src="./media/github.png" alt="GitHub" style="width: 16px; height: 16px;"> GitHub</a>
-    </p>
-  </footer>
-
-  <!-- Scripts: Theme toggle & navigation highlight -->
-  <script src="script.js" defer></script>
-</body>
+    <!-- Scripts: Theme toggle & navigation highlight -->
+    <script src="script.js" defer></script>
+  </body>
 </html>
