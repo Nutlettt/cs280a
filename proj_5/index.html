@@ -1207,12 +1207,13 @@
             original orientation. Finally, we can perform a reverse/denoising
             step with the averaged noise estimate. The full algorithm is:
             $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$ $$\epsilon_2 =
-            \text{transform}(\text{CFG of UNet}(\text{transform}(x_t), t,
+            \text{transform_back}(\text{CFG of UNet}(\text{transform}(x_t), t,
             p_2))$$ $$\epsilon = (\epsilon_1 + \epsilon_2) / 2$$ where the UNet
             is the diffusion model UNet from before, $\text{transform}(\cdot)$
-            is the orthogonal transformation function, and $p_1$ and $p_2$ are
-            two different text prompt embeddings, and $\epsilon$ is our final
-            noise estimate.
+            is the orthogonal transformation function and
+            $\text{transform_back}(\cdot)$ is its inverse, and $p_1$ and $p_2$
+            are two different text prompt embeddings, and $\epsilon$ is our
+            final noise estimate.
           </p>
           <h4>Implementation & Results</h4>
           <p>
@@ -1372,14 +1373,27 @@
           <h4><u>A.1.9: Hybrid Images</u></h4>
           <p>
             From part A.1.8, we can see that playing with the noise estimates at
-            each step can yield interesting visual illusions, such as visual anagrams through orthogonal transformations. Not limited in orthogonal transformations, here we will implement <a href="https://arxiv.org/abs/2404.11615">Factorized Diffusion</a> and create hybrid images similar to those in project 2, i.e., images whose interpretation changes as a function of viewing distance. 
+            each step can yield interesting visual illusions, such as visual
+            anagrams through orthogonal transformations. Not limited in
+            orthogonal transformations, here we will implement
+            <a href="https://arxiv.org/abs/2404.11615">Factorized Diffusion</a>
+            and create hybrid images similar to those in project 2, i.e., images
+            whose interpretation changes as a function of viewing distance.
           </p>
           <p>
-            To do this, we will follow almost the same procedure as in part A.1.8 but applying low- and high- pass filters to the two noise estimates respectively before fusing them via sum. The algorithm is as follows: $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$ $$\epsilon_2 = \text{CFG of UNet}(x_t, t, p_2)$$ $$\epsilon = f_{\text{lowpass}}(\epsilon_1) + f_{\text{highpass}}(\epsilon_2)$$
+            To do this, we will follow almost the same procedure as in part
+            A.1.8 but applying low- and high- pass filters to the two noise
+            estimates respectively before fusing them via sum. The algorithm is
+            as follows: $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$
+            $$\epsilon_2 = \text{CFG of UNet}(x_t, t, p_2)$$ $$\epsilon =
+            f_{\text{lowpass}}(\epsilon_1) + f_{\text{highpass}}(\epsilon_2)$$
           </p>
           <h4>Implementation & Results</h4>
           <p>
-            In my implementation, I use Gaussian filters for both low- and high-pass filtering, with a <code>kernel_size = 33</code> and <code>sigma = 2</code> for the low-pass filter. The code snippet of the modified denoising function is shown below.
+            In my implementation, I use Gaussian filters for both low- and
+            high-pass filtering, with a <code>kernel_size = 33</code> and
+            <code>sigma = 2</code> for the low-pass filter. The code snippet of
+            the modified denoising function is shown below.
           </p>
           <figure class="code-card">
             <p>
@@ -1488,13 +1502,24 @@
     return clean</code></pre>
           </figure>
           <p>
-            Two example hybrid images are shown and animated below. They are generated with <code>seed = 8</code> and <code>seed = 36</code>, respectively, and can be interpreted as different scenes when viewed up close versus from afar.
+            Two example hybrid images are shown and animated below. They are
+            generated with <code>seed = 8</code> and <code>seed = 36</code>,
+            respectively, and can be interpreted as different scenes when viewed
+            up close versus from afar.
           </p>
 
           <div class="hybrids-grid">
-            <div class="hybrid-item" data-transform="zoom-out" data-interval="4000">
+            <div
+              class="hybrid-item"
+              data-transform="zoom-out"
+              data-interval="4000"
+            >
               <div class="hybrid-frame">
-                <img src="media/part-a/a1-9_hybrid_1_seed8.png" alt="Hybrid Image 1" class="zoomable">
+                <img
+                  src="media/part-a/a1-9_hybrid_1_seed8.png"
+                  alt="Hybrid Image 1"
+                  class="zoomable"
+                />
               </div>
               <div class="hybrid-prompts">
                 <p class="hybrid-prompt">a photo of grand canyon</p>
@@ -1502,9 +1527,17 @@
               </div>
             </div>
 
-            <div class="hybrid-item" data-transform="zoom-out" data-interval="4000">
+            <div
+              class="hybrid-item"
+              data-transform="zoom-out"
+              data-interval="4000"
+            >
               <div class="hybrid-frame">
-                <img src="media/part-a/a1-9_hybrid_2_seed36.png" alt="Hybrid Image 2" class="zoomable">
+                <img
+                  src="media/part-a/a1-9_hybrid_2_seed36.png"
+                  alt="Hybrid Image 2"
+                  class="zoomable"
+                />
               </div>
               <div class="hybrid-prompts">
                 <p class="hybrid-prompt">a lightgraph of waterfalls</p>
@@ -1516,7 +1549,100 @@
 
         <section id="part-A-bw1">
           <h3><u>B &amp; W: More visual anagrams!</u></h3>
-          <p>...</p>
+          <p>
+            There are much more orthogonal transformations that can be used to
+            create visual anagrams. Here let's implement two more!
+          </p>
+          <h3><u>1. Approximated Skew Anagram</u></h3>
+          <p>
+            Here we implement the skew transformation to create visual anagrams.
+            Since the true skew transformation that inplemented via homography
+            is not "orthogonal" as it relies on interpolation, we instead
+            implement an approximated version mentioned in the paper, i.e.,
+            <em>skewing by columns of pixels by different displacements</em>.
+            This column-roll skew preserves pixel values and acts as a
+            permutation matrix, thus satisfying the orthogonality constraint
+            required by the noise-preserving property of diffusion models.
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            The implementation of this approximated skew transformation is
+            straightforward once we have our previous flip anagram code, i.e.,
+            just replace the flip operation with the skew operation. Here I'm
+            not repeating the full code for
+            <code>make_skew_illusion</code> function, but just show the skew
+            operation code snippet below.
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              implement skew operation in
+              <code>make_skew_illusion</code>
+            </p>
+            <pre><code class="language-python">def skew_img(img, max_disp):
+    b, c, h, w = img.shape
+    # shifts for each column
+    shifts = torch.linspace(-max_disp, max_disp, steps=w, device=img.device).round().long()  # (w,)
+    # raw row indices of all pixels
+    row_idx = torch.arange(h, device=img.device).view(h, 1) # (h, 1)
+    # shifted row indices
+    shifted_row_idx = (row_idx - shifts) % h # (h, w)
+    shifted_row_idx = shifted_row_idx.view(1, 1, h, w).expand(b, c, h, w) # (b, c, h, w)
+    # gather all pixels for skewed image
+    skewed_img = torch.gather(img, 2, shifted_row_idx)
+    return skewed_img</code></pre>
+          </figure>
+          <p>
+            To use it, we just need to defined a <code>max_disp</code> as our
+            maximum column displacement (in pixels) as an extra argument to the
+            illusion function, then call the above
+            <code>skew_img(im, max_disp)</code> as our transformation, and
+            <code>skew_img(im, -max_disp)</code> as its inverse. The results of
+            one example skew anagrams are shown below, with
+            <code>max_disp = 50</code> on a $64 \times 64$ image. The image was
+            sampled with <code>seed = 82</code>.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/bw_skew_illusion_seed82.png"
+                data-full="media/part-a/bw_skew_illusion_seed82.png"
+                alt="Skew Anagram"
+              />
+            </div>
+          </figure>
+
+          <h3><u>2. Negative Anagram</u></h3>
+          <p>
+            Not limited to geometric permutations, the color inversion like negatives can also be used as the orthogonal transformation, as it is intuitively a $180$ degree rotation generalized to higher dimensions, which allows us to generate illusions that change appearance upon color inversion, assuming pixel values are centered at $0$ (i.e., in $[-1, 1]$ range). Here we implement such negative anagram.
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            The implementation of negative anagram is even simpler. Everything is the same as our flip anagram code, except that the transformation function now is <code>negative_img</code>, defined as below, whose forward and inverse operations are the same.
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              implement negative operation in
+              <code>make_negative_illusion</code>
+            </p>
+            <pre><code class="language-python">def negative_img(img):
+    return -img</code></pre>
+          </figure>
+          <p>
+            One example negative anagram is shown below. The image was sampled with <code>seed = 68</code>.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/bw_negative_illusion_seed68.png"
+                data-full="media/part-a/bw_negative_illusion_seed68.png"
+                alt="Negative Anagram"
+              />
+            </div>
+          </figure>
         </section>
 
         <section id="part-A-bw2">
