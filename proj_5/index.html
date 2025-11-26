@@ -1209,7 +1209,7 @@
             $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$ $$\epsilon_2 =
             \text{transform}(\text{CFG of UNet}(\text{transform}(x_t), t,
             p_2))$$ $$\epsilon = (\epsilon_1 + \epsilon_2) / 2$$ where the UNet
-            is the diffusion model NNet from before, $\text{transform}(\cdot)$
+            is the diffusion model UNet from before, $\text{transform}(\cdot)$
             is the orthogonal transformation function, and $p_1$ and $p_2$ are
             two different text prompt embeddings, and $\epsilon$ is our final
             noise estimate.
@@ -1320,24 +1320,48 @@
     return clean</code></pre>
           </figure>
           <p>
-            Two example visual anagrams created with the above function are shown below. In both cases, the images can be interpreted as different scenes before and after a 180-degree rotation (animated as follows). They are sampled with <code>seed = 28</code> and <code>seed = 2</code>, respectively.
+            Two example visual anagrams created with the above function are
+            shown below. In both cases, the images can be interpreted as
+            different scenes before and after a 180-degree rotation (animated as
+            follows). They are sampled with <code>seed = 28</code> and
+            <code>seed = 2</code>, respectively.
           </p>
           <div class="anagrams-grid">
-            <div class="anagram-item" data-transform="rotate-180" data-interval="5000">
+            <div
+              class="anagram-item"
+              data-transform="rotate-180"
+              data-interval="4000"
+            >
               <div class="anagram-frame">
-                <img src="media/part-a/a1-8_flip_illusion_1_seed28.png" alt="Visual Anagram 1" class="zoomable">
+                <img
+                  src="media/part-a/a1-8_flip_illusion_1_seed28.png"
+                  alt="Visual Anagram 1"
+                  class="zoomable"
+                />
               </div>
               <div class="anagram-prompts">
-                <p class="anagram-prompt">an oil painting of people around a campfire</p>
+                <p class="anagram-prompt">
+                  an oil painting of people around a campfire
+                </p>
                 <p class="anagram-prompt">a photo of a volcano</p>
               </div>
             </div>
-            <div class="anagram-item" data-transform="rotate-180" data-interval="5000">
+            <div
+              class="anagram-item"
+              data-transform="rotate-180"
+              data-interval="4000"
+            >
               <div class="anagram-frame">
-                <img src="media/part-a/a1-8_flip_illusion_2_seed2.png" alt="Visual Anagram 2" class="zoomable">
+                <img
+                  src="media/part-a/a1-8_flip_illusion_2_seed2.png"
+                  alt="Visual Anagram 2"
+                  class="zoomable"
+                />
               </div>
               <div class="anagram-prompts">
-                <p class="anagram-prompt">a watercolor painting of flower arrangements</p>
+                <p class="anagram-prompt">
+                  a watercolor painting of flower arrangements
+                </p>
                 <p class="anagram-prompt">a photo of a dress</p>
               </div>
             </div>
@@ -1346,7 +1370,148 @@
 
         <section id="part-A-1-9">
           <h4><u>A.1.9: Hybrid Images</u></h4>
-          <p>...</p>
+          <p>
+            From part A.1.8, we can see that playing with the noise estimates at
+            each step can yield interesting visual illusions, such as visual anagrams through orthogonal transformations. Not limited in orthogonal transformations, here we will implement <a href="https://arxiv.org/abs/2404.11615">Factorized Diffusion</a> and create hybrid images similar to those in project 2, i.e., images whose interpretation changes as a function of viewing distance. 
+          </p>
+          <p>
+            To do this, we will follow almost the same procedure as in part A.1.8 but applying low- and high- pass filters to the two noise estimates respectively before fusing them via sum. The algorithm is as follows: $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$ $$\epsilon_2 = \text{CFG of UNet}(x_t, t, p_2)$$ $$\epsilon = f_{\text{lowpass}}(\epsilon_1) + f_{\text{highpass}}(\epsilon_2)$$
+          </p>
+          <h4>Implementation & Results</h4>
+          <p>
+            In my implementation, I use Gaussian filters for both low- and high-pass filtering, with a <code>kernel_size = 33</code> and <code>sigma = 2</code> for the low-pass filter. The code snippet of the modified denoising function is shown below.
+          </p>
+          <figure class="code-card">
+            <p>
+              <em>Code Snippet:</em>
+              implement Hybrid Images in
+              <code>iterative_denoise_hybrid_images</code>
+            </p>
+            <pre><code class="language-python">def make_hybrids(image, i_start, prompt_embeds, uncond_prompt_embeds, timesteps, scale=7, display=True):
+  # initialize inputs
+  image = image.half().to(device)
+  # two prompt embeddings
+  prompt_embeds_1, prompt_embeds_2 = prompt_embeds[:]
+  prompt_embeds_1 = prompt_embeds_1.half().to(device)
+  prompt_embeds_2 = prompt_embeds_2.half().to(device)
+  uncond_prompt_embeds = uncond_prompt_embeds.half().to(device)
+
+  with torch.no_grad():
+    for i in range(i_start, len(timesteps)-1):
+      # get timesteps
+      t = timesteps[i]
+      prev_t = timesteps[i+1]
+
+      # get 'alpha_cumprod', 'alpha_cumprod_prev', 'alpha', 'beta'
+      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
+      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
+      alpha = alpha_cumprod / alpha_cumprod_prev
+      beta = 1 - alpha
+
+      ## prompt 1 (low freq)
+      # get cond noise estimate
+      model_output_1 = stage_1.unet(
+        image,
+        t,
+        encoder_hidden_states=prompt_embeds_1,
+        return_dict=False
+      )[0]
+      noise_est_1, predicted_variance_1 = torch.split(model_output_1, image.shape[1], dim=1)
+
+      # uncond noise estimate
+      uncond_model_output_1 = stage_1.unet(
+        image,
+        t,
+        encoder_hidden_states=uncond_prompt_embeds,
+        return_dict=False
+      )
+      uncond_noise_est_1, _ = torch.split(uncond_model_output_1[0], image.shape[1], dim=1)
+
+      ## prompt 2 (high freq)
+      # get cond noise estimate
+      model_output_2 = stage_1.unet(
+        image,
+        t,
+        encoder_hidden_states=prompt_embeds_2,
+        return_dict=False
+      )[0]
+      noise_est_2, _ = torch.split(model_output_2, image.shape[1], dim=1)
+
+      # uncond noise estimate
+      uncond_model_output_2 = stage_1.unet(
+        image,
+        t,
+        encoder_hidden_states=uncond_prompt_embeds,
+        return_dict=False
+      )
+      uncond_noise_est_2, _ = torch.split(uncond_model_output_2[0], image.shape[1], dim=1)
+      
+      # compute the CFG noise estimates for both prompts
+      epsilon_u1 = uncond_noise_est_1
+      epsilon_u2 = uncond_noise_est_2
+      epsilon_c1 = noise_est_1
+      epsilon_c2 = noise_est_2
+      epsilon_1 = epsilon_u1 + scale * (epsilon_c1 - epsilon_u1)
+      epsilon_2 = epsilon_u2 + scale * (epsilon_c2 - epsilon_u2)
+      # low-pass to epsilon_1 and high-pass to epsilon_2
+      epsilon_1_low = TF.gaussian_blur(
+        epsilon_1,
+        kernel_size=33,
+        sigma=2
+      )
+
+      epsilon_2_high = epsilon_2 - TF.gaussian_blur(
+        epsilon_2,
+        kernel_size=33,
+        sigma=2
+      )
+      # combine two epsilons
+      epsilon = epsilon_1_low + epsilon_2_high
+
+      # Get `pred_prev_image`, the next less noisy image.
+      # compute `x_0` using one-step denoising
+      x_t = image
+      w_xt = 1 / torch.sqrt(alpha_cumprod)
+      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
+      x_0 = w_xt * x_t - w_sigma * epsilon # use cfg epsilon here
+      
+      # compute `pred_prev_image` (x_{t'})
+      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
+      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
+      xt_prev = w_x0 * x_0 + w_xt * x_t
+      pred_prev_image = add_variance(predicted_variance_1, t, xt_prev)
+
+      image = pred_prev_image
+
+    clean = image.cpu().detach().numpy()
+
+    return clean</code></pre>
+          </figure>
+          <p>
+            Two example hybrid images are shown and animated below. They are generated with <code>seed = 8</code> and <code>seed = 36</code>, respectively, and can be interpreted as different scenes when viewed up close versus from afar.
+          </p>
+
+          <div class="hybrids-grid">
+            <div class="hybrid-item" data-transform="zoom-out" data-interval="4000">
+              <div class="hybrid-frame">
+                <img src="media/part-a/a1-9_hybrid_1_seed8.png" alt="Hybrid Image 1" class="zoomable">
+              </div>
+              <div class="hybrid-prompts">
+                <p class="hybrid-prompt">a photo of grand canyon</p>
+                <p class="hybrid-prompt">Albert Einstein</p>
+              </div>
+            </div>
+
+            <div class="hybrid-item" data-transform="zoom-out" data-interval="4000">
+              <div class="hybrid-frame">
+                <img src="media/part-a/a1-9_hybrid_2_seed36.png" alt="Hybrid Image 2" class="zoomable">
+              </div>
+              <div class="hybrid-prompts">
+                <p class="hybrid-prompt">a lightgraph of waterfalls</p>
+                <p class="hybrid-prompt">a photo of a panda</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section id="part-A-bw1">
@@ -1502,5 +1667,6 @@
       });
     </script>
     <script src="anagrams.js"></script>
+    <script src="hybrids.js"></script>
   </body>
 </html>

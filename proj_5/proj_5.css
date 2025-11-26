@@ -1004,3 +1004,121 @@ code.hljs {
 .anagram-item:hover .anagram-frame img {
   animation-play-state: paused;
 }
+
+/* === Hybrid Images animated grid === */
+.hybrids-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 40px;
+  margin: 2rem auto;
+  max-width: 1000px;
+  padding: 10px 10px;
+}
+
+.hybrid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.hybrid-frame {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1 / 1;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--card-line, #d0d7de);
+  background: var(--card-bg, #fff);
+}
+
+:root[data-theme="dark"] .hybrid-frame {
+  background: #0d1117;
+  border-color: #30363d;
+}
+
+.hybrid-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: transparent;
+}
+
+/* Zoom animation states */
+.hybrid-frame.zoom-in img {
+  transform: scale(1.8);
+}
+
+.hybrid-frame.zoom-out img {
+  transform: scale(0.1);
+}
+
+/* Prompt display with fade transition */
+.hybrid-prompts {
+  text-align: center;
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  position: relative;
+  width: 100%;
+}
+
+.hybrid-prompt {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-muted, #57606a);
+  opacity: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  transition: opacity 0.5s ease;
+  white-space: normal;
+  max-width: 100%;
+}
+
+:root[data-theme="dark"] .hybrid-prompt {
+  color: #8b949e;
+}
+
+.hybrid-prompt.active {
+  opacity: 1;
+}
+
+.hybrid-prompt strong {
+  color: var(--accent, #2563eb);
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .hybrid-prompt strong {
+  color: #58a6ff;
+}
+
+/* Mobile adjustments */
+@media (max-width: 680px) {
+  .hybrids-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 20px 10px;
+  }
+  
+  .hybrid-frame {
+    max-width: 100%;
+  }
+  
+  .hybrid-prompt {
+    font-size: 0.85rem;
+  }
+}
+
+/* Pause animation on hover (optional) */
+.hybrid-item:hover .hybrid-frame img {
+  animation-play-state: paused;
+}
