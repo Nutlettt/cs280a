@@ -1648,8 +1648,37 @@
         <section id="part-A-bw2">
           <h3><u>B &amp; W: Design a course logo!</u></h3>
           <p>
-            TBD
+            I wanted to create a logo that a bear hidding behind a filter filled with some features of UC Berkeley. To do so, I sketched such a bear by myself in Procreate, and filling the $3 \times 3$ kernel with <a href="https://alumni.berkeley.edu/about-us/brand/color/">colors representing UC Berkeley</a>. The original sketch is shown below.
           </p>
+          <figure class="figure-center shrink-50">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/logo_sketch.png"
+                data-full="media/part-a/logo_sketch.png"
+                alt="Course Logo Sketch"
+              />
+              <figcaption>
+                Raw Course Logo Sketch by Procreate
+              </figcaption>
+            </div>
+          </figure>
+          <p>
+            Then, I used this sketch as the input image to perform text-conditional image-to-image translation to refine it. The prompt I used is "A clean, minimalistic course logo of the computer vision course of the University of California at Berkeley. A cute cartoon bear peeks from behind a square sign. Inside the square is a simple 3x3 convolution kernel diagram. Smooth bold outlines, flat look, friendly style". Then, with <code>seed = 9</code>, <code>i_start = 25</code> and <code>scale = 7</code>, I obtained the final logo as shown below, which, although it somehow changed the original color but looks more professional and appealing, at least aligns my expectation :D.
+          </p>
+          <figure class="figure-center shrink-50">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-a/bw_logo_seed9.png"
+                data-full="media/part-a/bw_logo_seed9.png"
+                alt="Course Logo Final"
+              />
+              <figcaption>
+                Course Logo after Text-Conditional Image-to-Image Translation
+              </figcaption>
+            </div>
+          </figure>
         </section>
         <hr />
 
