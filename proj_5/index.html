@@ -118,6 +118,46 @@
                 <a href="#part-A-bw2">B &amp; W: Design a course logo!</a>
               </li>
             </ul>
+
+            <a href="#part-B">Part B: Flow Matching from Scratch!</a>
+            <ul>
+              <li>
+                <a href="#part-B-1"
+                  >B.1: Training a Single-Step Denoising UNet</a
+                >
+              </li>
+              <li><a href="#part-B-1-1">B.1.1: Implementing the UNet</a></li>
+              <li>
+                <a href="#part-B-1-2"
+                  >B.1.2: Using the UNet to Train a Denoiser</a
+                >
+              </li>
+              <li><a href="#part-B-1-2-1">B.1.2.1: Training</a></li>
+              <li>
+                <a href="#part-B-1-2-2">B.1.2.2: Out-of-Distribution Testing</a>
+              </li>
+              <li><a href="#part-B-1-2-3">B.1.2.3: Denoising Pure Noise</a></li>
+              <li>
+                <a href="#part-B-2">B.2: Training a Flow Matching Model</a>
+              </li>
+              <li>
+                <a href="#part-B-2-1"
+                  >B.2.1: Adding Time Conditioning to UNet</a
+                >
+              </li>
+              <li><a href="#part-B-2-2">B.2.2: Training the UNet</a></li>
+              <li><a href="#part-B-2-3">B.2.3: Sampling from the UNet</a></li>
+              <li>
+                <a href="#part-B-2-4"
+                  >B.2.4: Adding Class-Conditioning to UNet</a
+                >
+              </li>
+              <li><a href="#part-B-2-5">B.2.5: Training the UNet</a></li>
+              <li><a href="#part-B-2-6">B.2.6: Sampling from the UNet</a></li>
+              <li>
+                <a href="#part-B-bw">B &amp; W: Better Time-Conditioned UNet</a>
+              </li>
+            </ul>
           </li>
         </ul>
       </nav>
@@ -322,10 +362,10 @@
             As the key part of diffusion, here we first implement the forward
             process, i.e., take a clean image and add noise to it, defined by:
             $$ q(x_t \mid x_0)=\mathcal{N}\left(x_t ; \sqrt{\bar{\alpha}_t} x_0,
-            (1-\bar{\alpha}_t) \mathbf{I}\right)\tag{1}$$ which is equivalent to
-            computing $$ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 -
+            (1-\bar{\alpha}_t) \mathbf{I}\right)\tag{A.1}$$ which is equivalent
+            to computing $$ x_t = \sqrt{\bar{\alpha}_t} x_0 + \sqrt{1 -
             \bar{\alpha}_t} \epsilon, \quad \epsilon \sim \mathcal{N}(0,
-            1)\tag{2}$$ Therefore, for a given clean image $x_0$ and timestep
+            1)\tag{A.2}$$ Therefore, for a given clean image $x_0$ and timestep
             $t$, the noisy image $x_t$ can be obtained by sampling $\epsilon$
             from a standard normal distribution and adding it to the scaled
             clean image.
@@ -492,7 +532,7 @@
             the calculation follows: $$ x_{t'} =
             \frac{\sqrt{\bar\alpha_{t'}}\beta_t}{1 - \bar\alpha_t} x_0 +
             \frac{\sqrt{\alpha_t}(1 - \bar\alpha_{t'})}{1 - \bar\alpha_t} x_t +
-            v_\sigma\tag{3} $$ where:
+            v_\sigma\tag{A.3} $$ where:
           </p>
           <ul>
             <li>$x_t$ is your image at timestep $t$</li>
@@ -700,7 +740,7 @@
               >Classifier-Free Guidance (CFG)</a
             >, where we compute both a conditional ($\epsilon_c$) and an
             unconditional ($\epsilon_u$) noise estimate through: $$ \epsilon =
-            \epsilon_u + \gamma(\epsilon_c - \epsilon_u)\tag{4} $$ where
+            \epsilon_u + \gamma(\epsilon_c - \epsilon_u)\tag{A.4} $$ where
             $\gamma$ controls the strength of CFG. From the equation, we can see
             that $\gamma=0$ corresponds to an unconditional noise estimate, and
             $\gamma=1$ corresponds to a conditional noise estimate. By setting
@@ -1615,11 +1655,20 @@
 
           <h3><u>2. Negative Anagram</u></h3>
           <p>
-            Not limited to geometric permutations, the color inversion like negatives can also be used as the orthogonal transformation, as it is intuitively a $180$ degree rotation generalized to higher dimensions, which allows us to generate illusions that change appearance upon color inversion, assuming pixel values are centered at $0$ (i.e., in $[-1, 1]$ range). Here we implement such negative anagram.
+            Not limited to geometric permutations, the color inversion like
+            negatives can also be used as the orthogonal transformation, as it
+            is intuitively a $180$ degree rotation generalized to higher
+            dimensions, which allows us to generate illusions that change
+            appearance upon color inversion, assuming pixel values are centered
+            at $0$ (i.e., in $[-1, 1]$ range). Here we implement such negative
+            anagram.
           </p>
           <h4>Implementation & Results</h4>
           <p>
-            The implementation of negative anagram is even simpler. Everything is the same as our flip anagram code, except that the transformation function now is <code>negative_img</code>, defined as below, whose forward and inverse operations are the same.
+            The implementation of negative anagram is even simpler. Everything
+            is the same as our flip anagram code, except that the transformation
+            function now is <code>negative_img</code>, defined as below, whose
+            forward and inverse operations are the same.
           </p>
           <figure class="code-card">
             <p>
@@ -1631,7 +1680,8 @@
     return -img</code></pre>
           </figure>
           <p>
-            One example negative anagram is shown below. The image was sampled with <code>seed = 68</code>.
+            One example negative anagram is shown below. The image was sampled
+            with <code>seed = 68</code>.
           </p>
           <figure class="figure-center">
             <div>
@@ -1648,7 +1698,12 @@
         <section id="part-A-bw2">
           <h3><u>B &amp; W: Design a course logo!</u></h3>
           <p>
-            I wanted to create a logo that a bear hidding behind a filter filled with some features of UC Berkeley. To do so, I sketched such a bear by myself in Procreate, and filling the $3 \times 3$ kernel with <a href="https://alumni.berkeley.edu/about-us/brand/color/">colors representing UC Berkeley</a>. The original sketch is shown below.
+            I wanted to create a logo that a bear hidding behind a filter filled
+            with some features of UC Berkeley. To do so, I sketched such a bear
+            by myself in Procreate, and filling the $3 \times 3$ kernel with
+            <a href="https://alumni.berkeley.edu/about-us/brand/color/"
+              >colors representing UC Berkeley</a
+            >. The original sketch is shown below.
           </p>
           <figure class="figure-center shrink-50">
             <div>
@@ -1658,13 +1713,21 @@
                 data-full="media/part-a/logo_sketch.png"
                 alt="Course Logo Sketch"
               />
-              <figcaption>
-                Raw Course Logo Sketch by Procreate
-              </figcaption>
+              <figcaption>Raw Course Logo Sketch by Procreate</figcaption>
             </div>
           </figure>
           <p>
-            Then, I used this sketch as the input image to perform text-conditional image-to-image translation to refine it. The prompt I used is "A clean, minimalistic course logo of the computer vision course of the University of California at Berkeley. A cute cartoon bear peeks from behind a square sign. Inside the square is a simple 3x3 convolution kernel diagram. Smooth bold outlines, flat look, friendly style". Then, with <code>seed = 9</code>, <code>i_start = 25</code> and <code>scale = 7</code>, I obtained the final logo as shown below, which, although it somehow changed the original color but looks more professional and appealing, at least aligns my expectation :D.
+            Then, I used this sketch as the input image to perform
+            text-conditional image-to-image translation to refine it. The prompt
+            I used is "A clean, minimalistic course logo of the computer vision
+            course of the University of California at Berkeley. A cute cartoon
+            bear peeks from behind a square sign. Inside the square is a simple
+            3x3 convolution kernel diagram. Smooth bold outlines, flat look,
+            friendly style". Then, with <code>seed = 9</code>,
+            <code>i_start = 25</code> and <code>scale = 7</code>, I obtained the
+            final logo as shown below, which, although it somehow changed the
+            original color but looks more professional and appealing, at least
+            aligns my expectation :D.
           </p>
           <figure class="figure-center shrink-50">
             <div>
@@ -1681,6 +1744,90 @@
           </figure>
         </section>
         <hr />
+
+        <section id="part-B">
+          <h2><u>Part B: Flow Matching from Scratch!</u></h2>
+          <p>
+            As we have explored diffusion models extensively in part A, now
+            let's dive into
+            <a href="https://arxiv.org/abs/2210.02747">flow matching</a> models
+            and implement our own for image generation from scratch! Again, the
+            code implementation will follow this
+            <a
+              href="https://colab.research.google.com/drive/1GqpAzvLuPwYiwJaY0xLEqdx5IkBNqk1B?usp=drive_link"
+              >provided notebook.</a
+            >
+            We will play with
+            <a
+              href="https://docs.pytorch.org/vision/main/generated/torchvision.datasets.MNIST.html"
+              >MNIST</a
+            >
+            dataset for simplicity.
+          </p>
+        </section>
+
+        <section id="#part-B-1">
+          <h3><u>B.1: Training a Single-Step Denoising UNet</u></h3>
+          <o>
+            Before jumping into flow matching, let's warmup by building a simple
+            one-step denosier $D_{\theta}$ such that maps a noisy image $z$ to a
+            clean image $x$, which can be trained over the $\mathcal{L}_2$ loss
+            between the denoised output and the ground truth clean image:
+            $$\mathcal{L}(\theta) = \mathbb{E}_{z,x} \left[ \| D_{\theta}(z) - x
+            \|_2^2 \right]\tag{B.1}$$
+          </o>
+        </section>
+
+        <section id="#part-B-1-1">
+          <h3><u>B.1.1: Implementing the UNet</u></h3>
+          <p>
+            In this whole part B, we will implement and use
+            <a href="https://arxiv.org/abs/1505.04597">UNet</a> as our backbone
+            for denoising and flow matching, i.e., the $D_{\theta}$. This
+            architecture encodes the input image into a latent representation
+            and then decodes it back to the original image space, while
+            incorporating skip connections to preserve both low and high
+            frequency spatial information. The implemented UNet follows the
+            architecture shown in the figure below, including its architecture
+            details and atomic operations.
+          </p>
+          <figure class="figure-center shrink-75">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/unconditional_arch.png"
+                data-full="media/part-b/unconditional_arch.png"
+                alt="Unconditional UNet Architecture"
+              />
+              <figcaption>Unconditional UNet Architecture</figcaption>
+            </div>
+          </figure>
+          <figure class="figure-center shrink-75">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/atomic_ops_new.png"
+                data-full="media/part-b/atomic_ops_new.png"
+                alt="Standard UNet Atomic Operations"
+              />
+              <figcaption>Standard UNet Atomic Operations</figcaption>
+            </div>
+          </figure>
+        </section>
+
+        <section id="#part-B-1-2">
+          <h3><u>B.1.2: Using the UNet to Train a Denoiser</u></h3>
+          <p>
+            Here we first train the $D_{\theta}$ as a one-step denoiser, i.e.,
+            predicting the clean image $x$ from a noisy input $z$. This can be
+            done by minimizing the $\mathcal{L}_2$ loss mentioned in equation
+            (B.1) above. The clean images are sampled from the MNIST training
+            set ($x \sim \mathcal{D}_{\text{MNIST}}$), and the noise image $z$
+            is generated by adding Gaussian noise to $x$: $$z = x + \sigma
+            \epsilon, \quad\text{where}\,\, \epsilon \sim \mathcal{N}(0,
+            I)\tag{B.2}$$
+          </p>
+        </section>
 
         <footer>
           <p>
