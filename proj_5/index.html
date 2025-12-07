@@ -357,7 +357,7 @@
         </section>
 
         <section id="part-A-1-1">
-          <h4><u>A.1.1: Forward Process</u></h4>
+          <h3><u>A.1.1: Forward Process</u></h3>
           <p>
             As the key part of diffusion, here we first implement the forward
             process, i.e., take a clean image and add noise to it, defined by:
@@ -422,7 +422,7 @@
         </section>
 
         <section id="part-A-1-2">
-          <h4><u>A.1.2: Classical Denoising</u></h4>
+          <h3><u>A.1.2: Classical Denoising</u></h3>
           <p>
             Before denoising with the learned diffusion model, let's first see
             how classical methods perform. Here, we use
@@ -454,7 +454,7 @@
         </section>
 
         <section id="part-A-1-3">
-          <h4><u>A.1.3: One-Step Denoising</u></h4>
+          <h3><u>A.1.3: One-Step Denoising</u></h3>
           <p>
             Now, let's use the pretrained diffusion model to perform the same
             denoising task in one step. Since the model is pretrained on a
@@ -496,7 +496,7 @@
         </section>
 
         <section id="part-A-1-4">
-          <h4><u>A.1.4: Iterative Denoising</u></h4>
+          <h3><u>A.1.4: Iterative Denoising</u></h3>
           <p>
             In part A.1.3, we saw that one-step denoising by the diffusion model
             does a much better job than classical approaches such as Gaussian
@@ -686,7 +686,7 @@
         </section>
 
         <section id="part-A-1-5">
-          <h4><u>A.1.5: Diffusion Model Sampling</u></h4>
+          <h3><u>A.1.5: Diffusion Model Sampling</u></h3>
           <p>
             Diffusion models can not only denoise images, but also able to
             generate images from scratch by starting from pure noise, i.e.,
@@ -730,7 +730,7 @@
         </section>
 
         <section id="part-A-1-6">
-          <h4><u>A.1.6: Classifier-Free Guidance</u></h4>
+          <h3><u>A.1.6: Classifier-Free Guidance</u></h3>
           <p>
             As we noticed in the previous part that some of the generated images
             are not very good and even completely non-sensical, here we improve
@@ -868,7 +868,7 @@
         </section>
 
         <section id="part-A-1-7">
-          <h4><u>A.1.7: Image-to-image Translation</u></h4>
+          <h3><u>A.1.7: Image-to-image Translation</u></h3>
           <p>
             The diffusion model can also be used to edit images, as we already
             saw in part 1.4 when we add noise to an image and then denoise it.
@@ -1227,7 +1227,7 @@
         </section>
 
         <section id="part-A-1-8">
-          <h4><u>A.1.8: Visual Anagrams</u></h4>
+          <h3><u>A.1.8: Visual Anagrams</u></h3>
           <p>
             In this part, we will implement the
             <a href="https://dangeng.github.io/visual_anagrams/"
@@ -1411,7 +1411,7 @@
         </section>
 
         <section id="part-A-1-9">
-          <h4><u>A.1.9: Hybrid Images</u></h4>
+          <h3><u>A.1.9: Hybrid Images</u></h3>
           <p>
             From part A.1.8, we can see that playing with the noise estimates at
             each step can yield interesting visual illusions, such as visual
@@ -1767,7 +1767,7 @@
           </p>
         </section>
 
-        <section id="#part-B-1">
+        <section id="part-B-1">
           <h3><u>B.1: Training a Single-Step Denoising UNet</u></h3>
           <o>
             Before jumping into flow matching, let's warmup by building a simple
@@ -1779,7 +1779,7 @@
           </o>
         </section>
 
-        <section id="#part-B-1-1">
+        <section id="part-B-1-1">
           <h3><u>B.1.1: Implementing the UNet</u></h3>
           <p>
             In this whole part B, we will implement and use
@@ -1792,7 +1792,7 @@
             architecture shown in the figure below, including its architecture
             details and atomic operations.
           </p>
-          <figure class="figure-center shrink-75">
+          <figure class="figure-center">
             <div>
               <img
                 class="responsive zoomable"
@@ -1803,7 +1803,7 @@
               <figcaption>Unconditional UNet Architecture</figcaption>
             </div>
           </figure>
-          <figure class="figure-center shrink-75">
+          <figure class="figure-center">
             <div>
               <img
                 class="responsive zoomable"
@@ -1816,7 +1816,7 @@
           </figure>
         </section>
 
-        <section id="#part-B-1-2">
+        <section id="part-B-1-2">
           <h3><u>B.1.2: Using the UNet to Train a Denoiser</u></h3>
           <p>
             Here we first train the $D_{\theta}$ as a one-step denoiser, i.e.,
@@ -1828,6 +1828,86 @@
             \sigma \epsilon, \quad\text{where}\,\, \epsilon \sim \mathcal{N}(0,
             I),\tag{B.2}$$ where the $\sigma$ controls the noise level.
           </p>
+          <h4>Visualization of the Noising Process</h4>
+          <p>
+            The visualization of the noising process with $\sigma$<code
+              >= [0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0]</code
+            >
+            is shown below.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b1_2_noising_process.png"
+                data-full="media/part-b/b1_2_noising_process.png"
+                alt="Noising Process Visualization"
+              />
+              <figcaption>
+                Noising Process Visualization with Varying Noise Levels
+              </figcaption>
+            </div>
+          </figure>
+        </section>
+
+        <section id="part-B-1-2-1">
+          <h4><u>B1.2.1 Training</u></h4>
+          <p>
+            We can now train our UNet denoiser to denoise the noisy images $z$ generated by $\sigma=0.5$ from clean images $x$. The model is created following the architecture shown in B.1.1, optimized by Adam, and the hyperparameters are summarized in the following table.
+          </p>
+          <div class="hyperparam-table-wrapper">
+            <div class="hyperparam-table-card">
+              <div class="table-title">One-Step UNet Denoiser Training Setup</div>
+              <div class="hyperparam-table-scroll">
+                <table class="hyperparam-table">
+                  <thead>
+                    <tr>
+                      <th><code>batch_size</code></th>
+                      <th><code>learning_rate</code></th>
+                      <th><code>noise_level</code></th>
+                      <th><code>hidden_dim</code></th>
+                      <th><code>num_epochs</code></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td data-label="Batch">256</td>
+                      <td data-label="LR">1e-4</td>
+                      <td data-label="Noise Level">0.5</td>
+                      <td data-label="Hidden Dim">128</td>
+                      <td data-label="Epochs">5</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <h4>Training Curve & Sample Results</h4>
+          <p>
+            The training loss curve is shown below, indicating that the model converges very fast and stably. Setting the same level of noise ($\sigma=0.5$), the denoised results on some test samples after checkpointing the model at different epochs are shown as well.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b1_2_1_training_curve.png"
+                data-full="media/part-b/b1_2_1_training_curve.png"
+                alt="Denoiser Training Curve"
+              />
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b1_2_1_denoise_test_set.png"
+                data-full="media/part-b/b1_2_1_denoise_test_set.png"
+                alt="Denoised Results at Different Epochs"
+              />
+              <figcaption>
+                Denoised Results at Different Epochs
+              </figcaption>
+            </div>
+          </figure>
         </section>
 
         <footer>
@@ -1936,9 +2016,11 @@
         // Persist scroll position across refreshes (minimize top flash)
         (function persistScroll() {
           const key = `scroll:${window.location.pathname}`;
-          history.scrollRestoration = 'manual';
+          history.scrollRestoration = "manual";
 
-          const getScroller = () => document.querySelector('main.with-sidebar') || document.scrollingElement;
+          const getScroller = () =>
+            document.querySelector("main.with-sidebar") ||
+            document.scrollingElement;
 
           function restore() {
             const scroller = getScroller();
@@ -1957,16 +2039,18 @@
             sessionStorage.setItem(key, String(scroller.scrollTop));
           }
 
-          if (document.readyState !== 'loading') {
+          if (document.readyState !== "loading") {
             restore();
           } else {
-            document.addEventListener('DOMContentLoaded', restore, { once: true });
+            document.addEventListener("DOMContentLoaded", restore, {
+              once: true,
+            });
           }
 
-          window.addEventListener('pageshow', restore);
-          window.addEventListener('beforeunload', save);
-          document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') save();
+          window.addEventListener("pageshow", restore);
+          window.addEventListener("beforeunload", save);
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") save();
           });
         })();
 
