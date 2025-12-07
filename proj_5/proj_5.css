@@ -903,6 +903,7 @@ code.hljs {
   justify-content: center;
   border: 1px solid var(--card-line, #d0d7de);
   background: var(--card-bg, #fff);
+  contain: layout; /* isolate transforms from page layout */
 }
 
 :root[data-theme="dark"] .anagram-frame {
@@ -917,6 +918,8 @@ code.hljs {
   transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   background: transparent;
+  contain: layout;
+  backface-visibility: hidden;
 }
 
 /* Rotation animation states */
@@ -1033,6 +1036,7 @@ code.hljs {
   justify-content: center;
   border: 1px solid var(--card-line, #d0d7de);
   background: var(--card-bg, #fff);
+  contain: layout; /* isolate transforms from page layout */
 }
 
 :root[data-theme="dark"] .hybrid-frame {
@@ -1047,6 +1051,57 @@ code.hljs {
   transition: transform 1.5s cubic-bezier(0.4, 0, 0.2, 1);
   border: none;
   background: transparent;
+  contain: layout;
+  backface-visibility: hidden;
+}
+
+/* Single scroll container lives on html; body is non-scrolling to avoid dual thumbs */
+html {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable; /* keep thumb width stable, avoid overlay jump */
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  padding-top: var(--topbar-height);
+  line-height: 1.6;
+  background: var(--gutter-bg);
+  color: var(--text);
+  position: relative;
+  min-height: 100%;
+  overflow: hidden; /* delegate scrolling to main container to prevent dual thumbs */
+}
+
+/* Make the primary content area the sole vertical scroller */
+main.with-sidebar {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  height: calc(100vh - var(--topbar-height));
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.main-center {
+  max-width: var(--content-max-sidebar);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding: var(--content-pad-sidebar);
+  background: var(--content-bg);
+  border-left: var(--content-border-x);
+  border-right: var(--content-border-x);
+  box-shadow: none;
+  border-radius: var(--radius);
+  overflow: visible;
 }
 
 /* Zoom animation states */

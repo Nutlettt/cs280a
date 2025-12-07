@@ -114,3 +114,42 @@ document.addEventListener('DOMContentLoaded', () => {
     if(e.key === 'Escape' && lb.classList.contains('open')) close();
   });
 });
+
+/* =====================================================
+  Prevent wheel "dead first scroll" when switching directions
+  Redirect wheel to page scroll if the target element can't scroll
+  in the current direction (breaks out of small/at-boundary scrollers).
+===================================================== */
+(function enableScrollEscape(){
+  const rootScroller = document.scrollingElement || document.documentElement;
+
+  function canScrollInDirection(el, dy){
+    const style = getComputedStyle(el);
+    const overflowY = style.overflowY;
+    if (!(overflowY === 'auto' || overflowY === 'scroll')) return false;
+
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll <= 0) return false;
+
+    const top = el.scrollTop;
+    if (dy < 0 && top > 0) return true;
+    if (dy > 0 && top < maxScroll) return true;
+    return false;
+  }
+
+  document.addEventListener('wheel', (e) => {
+    // ignore modified gestures or mostly-horizontal scrolls
+    if (e.defaultPrevented || e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+
+    const dy = e.deltaY;
+    let el = e.target;
+    while (el && el !== document.body && el !== document.documentElement) {
+      if (canScrollInDirection(el, dy)) return; // let the inner scroller handle it
+      el = el.parentElement;
+    }
+
+    // No scrollable ancestor can consume this delta; route it to the page
+    rootScroller.scrollBy({ top: dy, behavior: 'auto' });
+    e.preventDefault();
+  }, { passive: false, capture: true });
+})();
