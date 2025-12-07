@@ -1026,7 +1026,7 @@
             $\mathbf{m} = 1$. This can be achieved by "forcing" the obtained
             $x_t$ at every step in the denoising loop to have the same pixels as
             $x_{orig}$ where $\mathbf{m} = 0$, i.e, $$ x_t \gets \mathbf{m} x_t
-            + (1 - \mathbf{m}) \texttt{forward}(x_{orig},t)$$
+            + (1 - \mathbf{m}) \texttt{forward}(x_{orig},t).\tag{A.5}$$
           </p>
           <h4>Implementation & Results</h4>
           <p>
@@ -1246,11 +1246,12 @@
             $\epsilon_2$, after which, we transform $\epsilon_2$ back to the
             original orientation. Finally, we can perform a reverse/denoising
             step with the averaged noise estimate. The full algorithm is:
-            $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$ $$\epsilon_2 =
-            \text{transform_back}(\text{CFG of UNet}(\text{transform}(x_t), t,
-            p_2))$$ $$\epsilon = (\epsilon_1 + \epsilon_2) / 2$$ where the UNet
-            is the diffusion model UNet from before, $\text{transform}(\cdot)$
-            is the orthogonal transformation function and
+            $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1),\tag{A.6}$$
+            $$\epsilon_2 = \text{transform_back}(\text{CFG of
+            UNet}(\text{transform}(x_t), t, p_2)),\tag{A.7}$$ $$\epsilon =
+            (\epsilon_1 + \epsilon_2) / 2,\tag{A.8}$$ where the UNet is the
+            diffusion model UNet from before, $\text{transform}(\cdot)$ is the
+            orthogonal transformation function and
             $\text{transform_back}(\cdot)$ is its inverse, and $p_1$ and $p_2$
             are two different text prompt embeddings, and $\epsilon$ is our
             final noise estimate.
@@ -1424,9 +1425,10 @@
             To do this, we will follow almost the same procedure as in part
             A.1.8 but applying low- and high- pass filters to the two noise
             estimates respectively before fusing them via sum. The algorithm is
-            as follows: $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1)$$
-            $$\epsilon_2 = \text{CFG of UNet}(x_t, t, p_2)$$ $$\epsilon =
-            f_{\text{lowpass}}(\epsilon_1) + f_{\text{highpass}}(\epsilon_2)$$
+            as follows: $$\epsilon_1 = \text{CFG of UNet}(x_t, t,
+            p_1),\tag{A.9}$$ $$\epsilon_2 = \text{CFG of UNet}(x_t, t,
+            p_2),\tag{A.10}$$ $$\epsilon = f_{\text{lowpass}}(\epsilon_1) +
+            f_{\text{highpass}}(\epsilon_2)\tag{A.11}.$$
           </p>
           <h4>Implementation & Results</h4>
           <p>
@@ -1931,6 +1933,43 @@
           .matchMedia("(prefers-color-scheme: dark)")
           .addEventListener("change", () => {});
 
+        // Persist scroll position across refreshes (minimize top flash)
+        (function persistScroll() {
+          const key = `scroll:${window.location.pathname}`;
+          history.scrollRestoration = 'manual';
+
+          const getScroller = () => document.querySelector('main.with-sidebar') || document.scrollingElement;
+
+          function restore() {
+            const scroller = getScroller();
+            if (!scroller) return;
+            const saved = sessionStorage.getItem(key);
+            if (!saved) return;
+            const y = Number(saved) || 0;
+            // Apply twice across frames to avoid layout race
+            scroller.scrollTo(0, y);
+            requestAnimationFrame(() => scroller.scrollTo(0, y));
+          }
+
+          function save() {
+            const scroller = getScroller();
+            if (!scroller) return;
+            sessionStorage.setItem(key, String(scroller.scrollTop));
+          }
+
+          if (document.readyState !== 'loading') {
+            restore();
+          } else {
+            document.addEventListener('DOMContentLoaded', restore, { once: true });
+          }
+
+          window.addEventListener('pageshow', restore);
+          window.addEventListener('beforeunload', save);
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') save();
+          });
+        })();
+
         // Break out of small/at-boundary scroll containers on direction change
         (function enableScrollEscape() {
           const rootScroller =
@@ -1962,7 +2001,11 @@
 
               const dy = e.deltaY;
               let el = e.target;
-              while (el && el !== document.body && el !== document.documentElement) {
+              while (
+                el &&
+                el !== document.body &&
+                el !== document.documentElement
+              ) {
                 if (canScroll(el, dy)) return; // inner scroller will consume it
                 el = el.parentElement;
               }
