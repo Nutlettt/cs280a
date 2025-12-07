@@ -2012,6 +2012,109 @@
           </p>
         </section>
 
+        <section id="part-B-2">
+          <h3><u>B.2: Training a Flow Matching Model</u></h3>
+          <p>
+            We just saw that one-step denoising from pure noise fails to
+            generate diverse new samples due to the limitation of the training
+            objective. Instead, we need to gradually denoise from noise to data
+            through multiple steps, as we did in Part A with diffusion models.
+            Here, we will do so via
+            <a href="https://arxiv.org/abs/2210.02747">flow matching</a>, where
+            our UNet model will learn to predict the "flow" that transports
+            noise to the clean data manifold over continuous time, i.e., an
+            ordinary differential equation (ODE) describing the transformation
+            from noise to data. Then, in the sampling stage, we can solve this
+            ODE to generate a new realistic image $x_1$ from pure noise $x_0
+            \sim \mathcal{N}(0, \mathbf{I}).$
+          </p>
+          <p>
+            For iterative denoising, we need to define how intermediate noisy
+            samples are constructed, where the simplest approach is the linear
+            interpolation between noise and data in our training set: $$x_t =
+            (1-t)x_0 + t x_1 \quad \text{where}\,\, x_0 \sim \mathcal{N}(0,
+            \mathbf{I}), \,\, t \in [0,1].\tag{B.3}$$
+          </p>
+          <p>
+            This is a vector field describing the position of a point $x_t$ at
+            time $t$ relative to the clean data distribution $p_1(x_1)$ and the
+            noisy data distribution $p_0(x_0)$. Ituitively, we see that for
+            small $t$, we remain close to noise, while for larger $t$, we
+            approach the clean distribution.
+          </p>
+          <p>
+            The "flow" can be interpreted as the velocity of this vector field
+            that describing how points move from noise to data over time, i.e.,
+            $$u(x_t,t) = \frac{d}{d t} x_t = x_1 - x_0.\tag{B.4}$$
+          </p>
+          <p>
+            Therefore, our aim is to learn a $u_t(x_t, t)$ with our UNet model
+            that approximates this flow $u(x_t, t) = x_1 - x_0$ through the
+            objective below: $$ \mathcal{L}(\theta) = \mathbb{E}_{x_0 \sim
+            p_0(x_0), x_1 \sim p_1(x_1), t\sim \text{Unif}(0,1)} \left[ \|(x_1 -
+            x_0) - u_{\theta}(x_t, t)\|^2_2 \right].\tag{B.5}$$
+          </p>
+        </section>
+
+        <section id="part-B-2-1">
+          <h3><u>B.2.1 Adding Time Conditioning to UNet</u></h3>
+          <p>
+            Since our flow matching model $u_{\theta}(x_t, t)$ now takes an
+            extra time variable $t$ as input, we need to modify our UNet to
+            condition it on $t$. There are many ways to do this, and we will
+            follow the one introduced below.
+          </p>
+          <figure class="figure-center">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/conditional_arch_fm.png"
+                data-full="media/part-b/conditional_arch_fm.png"
+                alt="Time Conditioning in UNet"
+              />
+              <figcaption>Time Conditioning in UNet</figcaption>
+            </div>
+          </figure>
+          <p>
+            The new operator <code>FCBlock</code> is designed to encode and
+            inject the conditioning signals into the UNet.
+          </p>
+          <figure class="figure-center shrink-70">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/fc_long.png"
+                data-full="media/part-b/fc_long.png"
+                alt="FCBlock Architecture"
+              />
+              <figcaption>FCBlock Architecture</figcaption>
+            </div>
+          </figure>
+          <p>
+            With aforementioned new architectural design, our UNet can be
+            conditioned on $t$ through the following pseudo-code:
+          </p>
+          <figure class="code-card">
+            <p><em>Code Snippet:</em> Time conditioning in UNet on $t$</p>
+            <pre><code class="language-python">fc1_t = FCBlock(...)
+fc2_t = FCBlock(...)
+
+# the t passed in here should be normalized to be in the range [0, 1]
+t1 = fc1_t(t)
+t2 = fc2_t(t)
+
+# Follow diagram to get unflatten.
+# Replace the original unflatten with modulated unflatten.
+unflatten = unflatten * t1
+# Follow diagram to get up1.
+...
+# Replace the original up1 with modulated up1.
+up1 = up1 * t2
+# Follow diagram to get the output.
+...</code></pre>
+          </figure>
+        </section>
+
         <footer>
           <p>
             © 2025 ZHOU Guanren |
