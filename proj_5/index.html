@@ -170,13 +170,12 @@
           <h1>Fun With Diffusion Models!</h1>
         </header>
 
-        <!-- <div class="intro-image-row">
+        <div class="figure-center">
           <img
-            src="media/campus_cylindrical_mosaic_notitle.jpeg"
-            alt="Cylindrical Campus Scenery Mosaic"
+            src="media/part-a/bw_negative_illusion_seed68.png"
             class="intro-img-pair"
           />
-        </div> -->
+        </div>
 
         <section id="introduction">
           <h2><u>Introduction</u></h2>
@@ -2407,6 +2406,71 @@ up1 = c2 * up1 + t2
               </figcaption>
             </div>
           </figure>
+        </section>
+
+        <section id="part-B-bw">
+          <h3><u>B &amp; W: Better Time-Conditioned UNet</u></h3>
+          <p>
+            Recall that our time-conditioning only UNet in B.2.3 can even though generate digits from Gaussian noise, but the quality is not as good as the class-conditioned one, e.g., there are many artifacts making the digits hard to recognize. Therefore, here we try to improve it!
+          </p>
+          <p>
+            Since in this case we cannot apply CFG during sampling to enhance the generation quality, we instead enhance the model performance by improving its capacity of representation. For instance, here I increase the hidden dimension from $64$ to $128$. In the training stage, I also adjusted the initial learning rate to $5 \times 10^{-2}$, and increased the number of training epochs to $50$. The hyperparameters are summarized in the following table.
+          </p>
+          <div class="hyperparam-table-wrapper">
+            <div class="hyperparam-table-card">
+              <div class="table-title">
+                Better Time-Conditioned UNet Flow Matching Training Setup
+              </div>
+              <div class="hyperparam-table-scroll">
+                <table class="hyperparam-table">
+                  <thead>
+                    <tr>
+                      <th><code>batch_size</code></th>
+                      <th><code>learning_rate</code></th>
+                      <th><code>hidden_dim</code></th>
+                      <th><code>num_epochs</code></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td data-label="Batch">64</td>
+                      <td data-label="LR">5e-2</td>
+                      <td data-label="Hidden Dim">128</td>
+                      <td data-label="Epochs">50</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <p>
+            The training loss curve for this enhanced model is shown below, and the sampled new images at the last epoch are also attached afterwards.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/bw_better_time_conditioned_training_curve.png"
+                data-full="media/part-b/bw_better_time_conditioned_training_curve.png"
+                alt="Better Time-Conditioned UNet Flow Matching Training Curve"
+              />
+              <figcaption>
+                Better Time-Conditioned UNet Flow Matching Training Curve
+              </figcaption>
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/bw_better_time_conditioned_last_epoch_samples.png"
+                data-full="media/part-b/bw_better_time_conditioned_last_epoch_samples.png"
+                alt="Sampled Images at Training The Last Epoch"
+              />
+              <figcaption>Sampled Images at Training The Last Epoch</figcaption>
+            </div>
+          </figure>
+          <p>
+            It can be observed that, even though the quality is still not as good as the class-conditioned model (due to the lack of class information and CFG), the generated digits are much clearer and distinguishable than before, demonstrating the effectiveness of increasing model capacity and training time.
+          </p>
         </section>
 
         <footer>
