@@ -1246,8 +1246,8 @@
             original orientation. Finally, we can perform a reverse/denoising
             step with the averaged noise estimate. The full algorithm is:
             $$\epsilon_1 = \text{CFG of UNet}(x_t, t, p_1),\tag{A.6}$$
-            $$\epsilon_2 = \text{transform_back}(\text{CFG of
-            UNet}(\text{transform}(x_t), t, p_2)),\tag{A.7}$$ $$\epsilon =
+            $$\epsilon_2 = \text{transform_back}(\text{CFG of UNet}
+            (\text{transform}(x_t), t, p_2)),\tag{A.7}$$ $$\epsilon =
             (\epsilon_1 + \epsilon_2) / 2,\tag{A.8}$$ where the UNet is the
             diffusion model UNet from before, $\text{transform}(\cdot)$ is the
             orthogonal transformation function and
@@ -2253,13 +2253,28 @@ up1 = up1 * t2
         <section id="part-2-4">
           <h3><u>B.2.4 Adding Class-Conditioning to UNet</u></h3>
           <p>
-            To make the results better and give us more control over the generation process, we can further condition our UNet model on class labels, i.e., the model now becomes $u_{\theta}(x, t, c)$ where $c$ is the class label.
+            To make the results better and give us more control over the
+            generation process, we can further condition our UNet model on class
+            labels, i.e., the model now becomes $u_{\theta}(x, t, c)$ where $c$
+            is the class label.
           </p>
           <p>
-            In practice, we can add 2 more <code>FCBlock</code> to our UNet, where the class conditioning vector $c$ will first be represented as a one-hot vector and then passed into these <code>FCBlock</code> modules to be embeded and injected into the UNet. To make our model able to work without being conditioned on class labels, which is important to implement classifier-free guidance during sampling, we randomly drop the class conditioning vector $c$ to be an all-zero vector with a probability of $10\%$ during training, hence, $p_{uncond} = 0.1$. The peudo-code for conditioning our UNet on both time and class labels is shown below.
+            In practice, we can add 2 more <code>FCBlock</code> to our UNet,
+            where the class conditioning vector $c$ will first be represented as
+            a one-hot vector and then passed into these
+            <code>FCBlock</code> modules to be embeded and injected into the
+            UNet. To make our model able to work without being conditioned on
+            class labels, which is important to implement classifier-free
+            guidance during sampling, we randomly drop the class conditioning
+            vector $c$ to be an all-zero vector with a probability of $10\%$
+            during training, hence, $p_{uncond} = 0.1$. The peudo-code for
+            conditioning our UNet on both time and class labels is shown below.
           </p>
           <figure class="code-card">
-            <p><em>Code Snippet:</em> Time and class conditioning in UNet on t and c</p>
+            <p>
+              <em>Code Snippet:</em> Time and class conditioning in UNet on t
+              and c
+            </p>
             <pre><code class="language-python">fc1_t = FCBlock(...)
 fc1_c = FCBlock(...)
 fc2_t = FCBlock(...)
@@ -2285,7 +2300,11 @@ up1 = c2 * up1 + t2
         <section id="part-B-2-5">
           <h3><u>B.2.5 Training the Class-Conditioned UNet</u></h3>
           <p>
-            The training for this UNet with extra class conditioning follows almost the same procedure as the time-conditioned only one, where the only difference is to add the conditioning vector $c$ and do unconditional generation periodically, following Algorithm B.3 shown below.
+            The training for this UNet with extra class conditioning follows
+            almost the same procedure as the time-conditioned only one, where
+            the only difference is to add the conditioning vector $c$ and do
+            unconditional generation periodically, following Algorithm B.3 shown
+            below.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2300,7 +2319,8 @@ up1 = c2 * up1 + t2
               </figcaption>
             </div>
           </figure>
-          With the same hyperparameters setting as in B.2.2, the training loss curve for this class-conditioned UNet is shown as follows.
+          With the same hyperparameters setting as in B.2.2, the training loss
+          curve for this class-conditioned UNet is shown as follows.
           <figure class="figure-center shrink-80">
             <div>
               <img
@@ -2319,7 +2339,11 @@ up1 = c2 * up1 + t2
         <section id="part-B-2-6">
           <h3><u>B.2.6 Sampling with Class-Conditioned UNet</u></h3>
           <p>
-            We can now sample new images with our class-conditioned UNet flow matching model. With this class conditioning, we can further apply CFG during sampling to enhance the generation quality. The sampling procedure follows Algorithm B.4 shown below, where the guidance scale $\gamma$ is set to $5.0$ in our experiments.
+            We can now sample new images with our class-conditioned UNet flow
+            matching model. With this class conditioning, we can further apply
+            CFG during sampling to enhance the generation quality. The sampling
+            procedure follows Algorithm B.4 shown below, where the guidance
+            scale $\gamma$ is set to $5.0$ in our experiments.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2336,7 +2360,10 @@ up1 = c2 * up1 + t2
           </figure>
           <h4>Sampling Results</h4>
           <p>
-            The sampled new images at checkpoints of epochs $1$, $5$, and $10$ are shown below. It is obvious that the model generates more realistic and diverse digits with class conditioning and CFG, compared to the time-conditioned only model.
+            The sampled new images at checkpoints of epochs $1$, $5$, and $10$
+            are shown below. It is obvious that the model generates more
+            realistic and diverse digits with class conditioning and CFG,
+            compared to the time-conditioned only model.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2375,7 +2402,15 @@ up1 = c2 * up1 + t2
           </figure>
           <h4><u>Getting Rid of Learning Rate Scheduler</u></h4>
           <p>
-            Here comes a question: can we get rid of the annoying learning rate scheduler? The answer is yes! From the training loss curve above, we can see that the loss actually decreases quite quickly at the beginning, which indicates that the scheduler is actually not that necessary. Therefore, for simplicity, we can fix the learning rate to a smaller value, e.g., $5 \times 10^{-3}$, and train the model longer for $15$ epochs without the scheduler. The training loss curve for this new setting is shown below, which is quite similar to the previous one with the scheduler.
+            Here comes a question: can we get rid of the annoying learning rate
+            scheduler? The answer is yes! From the training loss curve above, we
+            can see that the loss actually decreases quite quickly at the
+            beginning, which indicates that the scheduler is actually not that
+            necessary. Therefore, for simplicity, we can fix the learning rate
+            to a smaller value, e.g., $5 \times 10^{-3}$, and train the model
+            longer for $15$ epochs without the scheduler. The training loss
+            curve for this new setting is shown below, which is quite similar to
+            the previous one with the scheduler.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2386,12 +2421,18 @@ up1 = c2 * up1 + t2
                 alt="Class-Conditioned UNet Flow Matching Training Curve without Scheduler"
               />
               <figcaption>
-                Class-Conditioned UNet Flow Matching Training Curve without Scheduler
+                Class-Conditioned UNet Flow Matching Training Curve without
+                Scheduler
               </figcaption>
             </div>
           </figure>
           <p>
-            Also, let's sample some new images via this model at the last epoch and compare with the previous one with the scheduler, shown below. From the sampled results, we can not visually tell which one is better, meaning that fixing a smaller learning rate and training longer without the scheduler works just as well as using the scheduler.
+            Also, let's sample some new images via this model at the last epoch
+            and compare with the previous one with the scheduler, shown below.
+            From the sampled results, we can not visually tell which one is
+            better, meaning that fixing a smaller learning rate and training
+            longer without the scheduler works just as well as using the
+            scheduler.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2411,10 +2452,19 @@ up1 = c2 * up1 + t2
         <section id="part-B-bw">
           <h3><u>B &amp; W: Better Time-Conditioned UNet</u></h3>
           <p>
-            Recall that our time-conditioning only UNet in B.2.3 can even though generate digits from Gaussian noise, but the quality is not as good as the class-conditioned one, e.g., there are many artifacts making the digits hard to recognize. Therefore, here we try to improve it!
+            Recall that our time-conditioning only UNet in B.2.3 can even though
+            generate digits from Gaussian noise, but the quality is not as good
+            as the class-conditioned one, e.g., there are many artifacts making
+            the digits hard to recognize. Therefore, here we try to improve it!
           </p>
           <p>
-            Since in this case we cannot apply CFG during sampling to enhance the generation quality, we instead enhance the model performance by improving its capacity of representation. For instance, here I increase the hidden dimension from $64$ to $128$. In the training stage, I also adjusted the initial learning rate to $5 \times 10^{-2}$, and increased the number of training epochs to $50$. The hyperparameters are summarized in the following table.
+            Since in this case we cannot apply CFG during sampling to enhance
+            the generation quality, we instead enhance the model performance by
+            improving its capacity of representation. For instance, here I
+            increase the hidden dimension from $64$ to $128$. In the training
+            stage, I also adjusted the initial learning rate to $5 \times
+            10^{-2}$, and increased the number of training epochs to $50$. The
+            hyperparameters are summarized in the following table.
           </p>
           <div class="hyperparam-table-wrapper">
             <div class="hyperparam-table-card">
@@ -2444,7 +2494,9 @@ up1 = c2 * up1 + t2
             </div>
           </div>
           <p>
-            The training loss curve for this enhanced model is shown below, and the sampled new images at the last epoch are also attached afterwards.
+            The training loss curve for this enhanced model is shown below, and
+            the sampled new images at the last epoch are also attached
+            afterwards.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2469,7 +2521,11 @@ up1 = c2 * up1 + t2
             </div>
           </figure>
           <p>
-            It can be observed that, even though the quality is still not as good as the class-conditioned model (due to the lack of class information and CFG), the generated digits are much clearer and distinguishable than before, demonstrating the effectiveness of increasing model capacity and training time.
+            It can be observed that, even though the quality is still not as
+            good as the class-conditioned model (due to the lack of class
+            information and CFG), the generated digits are much clearer and
+            distinguishable than before, demonstrating the effectiveness of
+            increasing model capacity and training time.
           </p>
         </section>
 
