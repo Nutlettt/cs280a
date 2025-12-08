@@ -2060,9 +2060,9 @@
           <h3><u>B.2.1 Adding Time Conditioning to UNet</u></h3>
           <p>
             Since our flow matching model $u_{\theta}(x_t, t)$ now takes an
-            extra time variable $t$ as input, we need to modify our UNet to
-            condition it on $t$. There are many ways to do this, and we will
-            follow the one introduced below.
+            extra time variable $t$ as input, we need to modify our previous
+            UNet architecture to condition it on $t$. There are many ways to do
+            this, and we will follow the one introduced below.
           </p>
           <figure class="figure-center">
             <div>
@@ -2095,7 +2095,7 @@
             conditioned on $t$ through the following pseudo-code:
           </p>
           <figure class="code-card">
-            <p><em>Code Snippet:</em> Time conditioning in UNet on $t$</p>
+            <p><em>Code Snippet:</em> Time conditioning in UNet on t</p>
             <pre><code class="language-python">fc1_t = FCBlock(...)
 fc2_t = FCBlock(...)
 
@@ -2112,6 +2112,300 @@ unflatten = unflatten * t1
 up1 = up1 * t2
 # Follow diagram to get the output.
 ...</code></pre>
+          </figure>
+        </section>
+
+        <section id="part-B-2-2">
+          <h3><u>B.2.2 Training the Time-Conditioned UNet</u></h3>
+          <p>
+            The training of the time-conditioned UNet flow matching model
+            follows the architecture introduced in B.2.1, trained on the
+            objective in equation (B.5) via the Adam optimizer. The exponential
+            learning rate scheduler is used, where the gamma was set to
+            $0.1^{(1.0/\texttt{num_epochs})}$. Key hyperparameters are
+            summarized in the following table.
+          </p>
+          <div class="hyperparam-table-wrapper">
+            <div class="hyperparam-table-card">
+              <div class="table-title">
+                Time-Conditioned UNet Flow Matching Training Setup
+              </div>
+              <div class="hyperparam-table-scroll">
+                <table class="hyperparam-table">
+                  <thead>
+                    <tr>
+                      <th><code>batch_size</code></th>
+                      <th><code>learning_rate</code></th>
+                      <th><code>hidden_dim</code></th>
+                      <th><code>num_epochs</code></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td data-label="Batch">64</td>
+                      <td data-label="LR">1e-2</td>
+                      <td data-label="Hidden Dim">64</td>
+                      <td data-label="Epochs">10</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <p>
+            The training process follows Algorithm 1 shown below, and the
+            training loss curve is also attached afterwards, indicating a stable
+            convergence.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/algo1_t_only_fm.png"
+                data-full="media/part-b/algo1_t_only_fm.png"
+                alt="Flow Matching Training Algorithm"
+              />
+              <figcaption>
+                Algorithm B.1. Training Time-Conditioned UNet
+              </figcaption>
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_2_time_conditioned_training_curve.png"
+                data-full="media/part-b/b2_2_time_conditioned_training_curve.png"
+                alt="Time-Conditioned UNet Flow Matching Training Curve"
+              />
+              <figcaption>
+                Time-Conditioned UNet Flow Matching Training Curve
+              </figcaption>
+            </div>
+          </figure>
+        </section>
+
+        <section id="part-B-2-3">
+          <h3><u>B.2.3 Sampling From the Time-Conditioned UNet</u></h3>
+          <p>
+            We can now sample new images from pure noise by iteratively solving
+            the ODE defined by our trained UNet flow matching model. The
+            sampling procedure follows Algorithm 2 shown below, which is a
+            simple Euler method with fixed step size $1/T$, and here we set
+            $T=50$.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/algo2_t_only_fm.png"
+                data-full="media/part-b/algo2_t_only_fm.png"
+                alt="Flow Matching Sampling Algorithm"
+              />
+              <figcaption>
+                Algorithm B.2. Sampling from Time-Conditioned UNet
+              </figcaption>
+            </div>
+          </figure>
+          <h4>Sampling Results</h4>
+          <p>
+            The sampled new images at checkpoints of epochs $1$, $5$, and $10$
+            are shown below. It is obvious that the model gradually learns to
+            generate more realistic and diverse digits as training proceeds.
+            However, there are still some artifacts that make them far from
+            perfect, though they are resonably good for only $10$ epochs of
+            training.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_2_time_conditioned_epoch_1_samples.png"
+                data-full="media/part-b/b2_2_time_conditioned_epoch_1_samples.png"
+                alt="Sampled Images at Different Training Epoch 1"
+              />
+              <figcaption>
+                Sampled Images at Different Training Epoch 1
+              </figcaption>
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_2_time_conditioned_epoch_5_samples.png"
+                data-full="media/part-b/b2_2_time_conditioned_epoch_5_samples.png"
+                alt="Sampled Images at Different Training Epoch 5"
+              />
+              <figcaption>
+                Sampled Images at Different Training Epoch 5
+              </figcaption>
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_2_time_conditioned_epoch_10_samples.png"
+                data-full="media/part-b/b2_2_time_conditioned_epoch_10_samples.png"
+                alt="Sampled Images at Different Training Epoch 10"
+              />
+              <figcaption>
+                Sampled Images at Different Training Epoch 10
+              </figcaption>
+            </div>
+          </figure>
+        </section>
+
+        <section id="part-2-4">
+          <h3><u>B.2.4 Adding Class-Conditioning to UNet</u></h3>
+          <p>
+            To make the results better and give us more control over the generation process, we can further condition our UNet model on class labels, i.e., the model now becomes $u_{\theta}(x, t, c)$ where $c$ is the class label.
+          </p>
+          <p>
+            In practice, we can add 2 more <code>FCBlock</code> to our UNet, where the class conditioning vector $c$ will first be represented as a one-hot vector and then passed into these <code>FCBlock</code> modules to be embeded and injected into the UNet. To make our model able to work without being conditioned on class labels, which is important to implement classifier-free guidance during sampling, we randomly drop the class conditioning vector $c$ to be an all-zero vector with a probability of $10\%$ during training, hence, $p_{uncond} = 0.1$. The peudo-code for conditioning our UNet on both time and class labels is shown below.
+          </p>
+          <figure class="code-card">
+            <p><em>Code Snippet:</em> Time and class conditioning in UNet on t and c</p>
+            <pre><code class="language-python">fc1_t = FCBlock(...)
+fc1_c = FCBlock(...)
+fc2_t = FCBlock(...)
+fc2_c = FCBlock(...)
+
+t1 = fc1_t(t)
+c1 = fc1_c(c)
+t2 = fc2_t(t)
+c2 = fc2_c(c)
+
+# Follow diagram to get unflatten.
+# Replace the original unflatten with modulated unflatten.
+unflatten = c1 * unflatten + t1
+# Follow diagram to get up1.
+...
+# Replace the original up1 with modulated up1.
+up1 = c2 * up1 + t2
+# Follow diagram to get the output.
+...</code></pre>
+          </figure>
+        </section>
+
+        <section id="part-B-2-5">
+          <h3><u>B.2.5 Training the Class-Conditioned UNet</u></h3>
+          <p>
+            The training for this UNet with extra class conditioning follows almost the same procedure as the time-conditioned only one, where the only difference is to add the conditioning vector $c$ and do unconditional generation periodically, following Algorithm B.3 shown below.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/algo3_c_fm.png"
+                data-full="media/part-b/algo3_c_fm.png"
+                alt="Class-Conditioned Flow Matching Training Algorithm"
+              />
+              <figcaption>
+                Algorithm B.3. Training Class-Conditioned UNet
+              </figcaption>
+            </div>
+          </figure>
+          With the same hyperparameters setting as in B.2.2, the training loss curve for this class-conditioned UNet is shown as follows.
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_5_class_conditioned_training_curve.png"
+                data-full="media/part-b/b2_5_class_conditioned_training_curve.png"
+                alt="Class-Conditioned UNet Flow Matching Training Curve"
+              />
+              <figcaption>
+                Class-Conditioned UNet Flow Matching Training Curve
+              </figcaption>
+            </div>
+          </figure>
+        </section>
+
+        <section id="part-B-2-6">
+          <h3><u>B.2.6 Sampling with Class-Conditioned UNet</u></h3>
+          <p>
+            We can now sample new images with our class-conditioned UNet flow matching model. With this class conditioning, we can further apply CFG during sampling to enhance the generation quality. The sampling procedure follows Algorithm B.4 shown below, where the guidance scale $\gamma$ is set to $5.0$ in our experiments.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/algo4_c_fm.png"
+                data-full="media/part-b/algo4_c_fm.png"
+                alt="Class-Conditioned Flow Matching Sampling Algorithm"
+              />
+              <figcaption>
+                Algorithm B.4. Sampling from Class-Conditioned UNet with CFG
+              </figcaption>
+            </div>
+          </figure>
+          <h4>Sampling Results</h4>
+          <p>
+            The sampled new images at checkpoints of epochs $1$, $5$, and $10$ are shown below. It is obvious that the model generates more realistic and diverse digits with class conditioning and CFG, compared to the time-conditioned only model.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_6_class_conditioned_epoch_1_samples.png"
+                data-full="media/part-b/b2_6_class_conditioned_epoch_1_samples.png"
+                alt="Sampled Images at Different Training Epoch 1"
+              />
+              <figcaption>
+                Sampled Images at Different Training Epoch 1
+              </figcaption>
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_6_class_conditioned_epoch_5_samples.png"
+                data-full="media/part-b/b2_6_class_conditioned_epoch_5_samples.png"
+                alt="Sampled Images at Different Training Epoch 5"
+              />
+              <figcaption>
+                Sampled Images at Different Training Epoch 5
+              </figcaption>
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_6_class_conditioned_epoch_10_samples.png"
+                data-full="media/part-b/b2_6_class_conditioned_epoch_10_samples.png"
+                alt="Sampled Images at Different Training Epoch 10"
+              />
+              <figcaption>
+                Sampled Images at Different Training Epoch 10
+              </figcaption>
+            </div>
+          </figure>
+          <h4><u>Getting Rid of Learning Rate Scheduler</u></h4>
+          <p>
+            Here comes a question: can we get rid of the annoying learning rate scheduler? The answer is yes! From the training loss curve above, we can see that the loss actually decreases quite quickly at the beginning, which indicates that the scheduler is actually not that necessary. Therefore, for simplicity, we can fix the learning rate to a smaller value, e.g., $5 \times 10^{-3}$, and train the model longer for $15$ epochs without the scheduler. The training loss curve for this new setting is shown below, which is quite similar to the previous one with the scheduler.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_6_class_conditioned_no_scheduler_training_curve.png"
+                data-full="media/part-b/b2_6_class_conditioned_no_scheduler_training_curve.png"
+                alt="Class-Conditioned UNet Flow Matching Training Curve without Scheduler"
+              />
+              <figcaption>
+                Class-Conditioned UNet Flow Matching Training Curve without Scheduler
+              </figcaption>
+            </div>
+          </figure>
+          <p>
+            Also, let's sample some new images via this model at the last epoch and compare with the previous one with the scheduler, shown below. From the sampled results, we can not visually tell which one is better, meaning that fixing a smaller learning rate and training longer without the scheduler works just as well as using the scheduler.
+          </p>
+          <figure class="figure-center shrink-80">
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_6_class_conditioned_no_scheduler_epoch_15_samples.png"
+                data-full="media/part-b/b2_6_class_conditioned_no_scheduler_epoch_15_samples.png"
+                alt="Sampled Images at Training Epoch 15 without Scheduler"
+              />
+              <figcaption>
+                Sampled Images at Training Epoch 15 without Scheduler
+              </figcaption>
+            </div>
           </figure>
         </section>
 
