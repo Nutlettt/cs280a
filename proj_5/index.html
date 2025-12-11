@@ -2030,9 +2030,7 @@ up1 = c2 * up1 + t2
             </div>
           </div>
           <p>
-            The training loss curve for this enhanced model is shown below, and
-            the sampled new images at the last epoch are also attached
-            afterwards.
+            The training loss curve for this enhanced model is shown below, which indicates a quick and sharp reduction in loss at the beginning. Although we cannot directly see the convergence at later epoches due to the scale of the plot, we can still observe improvements in the sampled results shown later, implying that the model is still learning.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2046,6 +2044,12 @@ up1 = c2 * up1 + t2
                 Better Time-Conditioned UNet Flow Matching Training Curve
               </figcaption>
             </div>
+          </figure>
+          <h4>Sampling Results & Comparison</h4>
+          <p>
+            The last epoch's checkpoint was used to sample new images from the same pure noises as in B.2.3 for fair comparison. The sampled results are shown below (first image), alongside with those from B.2.3 (second image).
+          </p>
+          <figure class="figure-center shrink-80">
             <div>
               <img
                 class="responsive zoomable"
@@ -2053,7 +2057,18 @@ up1 = c2 * up1 + t2
                 data-full="media/part-b/bw_better_time_conditioned_last_epoch_samples.png"
                 alt="Sampled Images at Training The Last Epoch"
               />
-              <figcaption>Sampled Images at Training The Last Epoch</figcaption>
+              <figcaption>Sampled Images at Training Epoch 50 of Better Time-Conditioned UNet Flow Matching</figcaption>
+            </div>
+            <div>
+              <img
+                class="responsive zoomable"
+                src="media/part-b/b2_2_time_conditioned_epoch_10_samples.png"
+                data-full="media/part-b/b2_2_time_conditioned_epoch_10_samples.png"
+                alt="Sampled Images at Different Training Epoch 10"
+              />
+              <figcaption>
+                Sampled Images at Different Training Epoch 10 of Original Time-Conditioned UNet Flow Matching
+              </figcaption>
             </div>
           </figure>
           <p>
