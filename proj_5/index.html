@@ -371,40 +371,15 @@
           </p>
           <h4>Implementation & Results</h4>
           <p>
-            The code snippet below shows the implementation of the forward
-            process function, and the
+            The
             <a
               href="https://cal-cs180.github.io/fa25/hw/proj5/assets/campanile.jpg"
               >Campanile</a
             >
-            at noise levels of <code>[250, 500, 750]</code> through the
-            implemented function are also visualized as follows.
+            at noise levels of <code>[250, 500, 750]</code> through the forward
+            process are visualized below. As expected, the images become
+            increasingly noisy as the timestep increases.
           </p>
-          <figure class="code-card">
-            <p>
-              <em>Code Snippet:</em>
-              <code>noisy_im = forward(im, t)</code> function
-            </p>
-            <pre><code class="language-python">def forward(im, t):
-  """
-  Args:
-    im : torch tensor of size (1, 3, 64, 64) representing the clean image
-    t : integer timestep
-
-  Returns:
-    im_noisy : torch tensor of size (1, 3, 64, 64) representing the noisy image at timestep t
-  """
-  with torch.no_grad():
-    # ===== your code here! ====
-    alpha_bar = alphas_cumprod[t].to(im.device).type(im.dtype)
-    w_x0 = torch.sqrt(alpha_bar)
-    w_epsilon = torch.sqrt(1 - alpha_bar)
-    
-    epsilon = torch.randn_like(im)
-    im_noisy = w_x0 * im + w_epsilon * epsilon
-    # ===== end of code ====
-  return im_noisy</code></pre>
-          </figure>
           <figure class="figure-center">
             <div>
               <img
@@ -570,83 +545,10 @@
           <p></p>
           <p>
             Then, starting with the given function framework in the notebook, we
-            can implement the iterative denoising loop, as shown below.
-          </p>
-          <figure class="code-card">
-            <p>
-              <em>Code Snippet:</em>
-              complete <code>iterative_denoise</code>
-            </p>
-            <pre><code class="language-python">def iterative_denoise(im_noisy, i_start, prompt_embeds, timesteps, display=True):
-  # ==== my modifications ====
-  image = im_noisy.to(device).half()
-  prompt_embeds = prompt_embeds.half().to(device)
-  intermediate_img_t = []
-  # ==== end of modifications ====
-
-  with torch.no_grad():
-    for i in range(i_start, len(timesteps) - 1):
-      # Get timesteps
-      t = timesteps[i]
-      prev_t = timesteps[i+1]
-
-      # get `alpha_cumprod` and `alpha_cumprod_prev` for timestep t from `alphas_cumprod`
-      # compute `alpha`
-      # compute `beta`
-      # ===== your code here! =====
-      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
-      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
-      alpha = alpha_cumprod / alpha_cumprod_prev
-      beta = 1 - alpha
-      # ==== end of code ====
-
-      # Get noise estimate
-      model_output = stage_1.unet(
-          image,
-          t,
-          encoder_hidden_states=prompt_embeds,
-          return_dict=False
-      )[0]
-
-      # Split estimate into noise and variance estimate
-      noise_est, predicted_variance = torch.split(model_output, image.shape[1], dim=1)
-
-      # compute `pred_prev_image` (x_{t'}), the DDPM estimate for the image at the
-      # next timestep, which is slightly less noisy. Use the equation 3.
-      # This is the core of DDPM
-      # ===== your code here! =====
-      # compute `x_0` using one-step denoising
-      x_t = image
-      w_xt = 1 / torch.sqrt(alpha_cumprod)
-      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
-      x_0 = w_xt * x_t - w_sigma * noise_est
-      
-      # compute `pred_prev_image` (x_{t'})
-      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
-      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
-      xt_prev = w_x0 * x_0 + w_xt * x_t
-      pred_prev_image = add_variance(predicted_variance, t, xt_prev)
-      
-      # store every 5th loop of denoising
-      if i % 5 == 0 and display:
-        intermediate_img_t.append((pred_prev_image,t))
-      # ==== end of code ====
-
-      image = pred_prev_image
-
-    clean = image.cpu().detach().numpy()
-
-  # ==== my modifications ====
-  if display:
-    return clean, intermediate_img_t
-  else:
-    return clean
-  # ==== end of modifications ====</code></pre>
-          </figure>
-          <p>
-            With <code>i_start = 10</code>, the noisy Campanile every $5$th loop
-            of denoising is shown below, where we can see that they becomes
-            gradually cleaner.
+            can implement the iterative denoising loop, which simply follows the
+            equation derived above. With <code>i_start = 10</code>, the noisy
+            Campanile every $5$th loop of denoising is shown below, where we can
+            see that they becomes gradually cleaner.
           </p>
           <figure class="figure-center">
             <div>
@@ -753,93 +655,18 @@
           </p>
           <p>
             In practice, the "unconditional" embedding corresponds to an empty
-            prompt, i.e., "". Then, our previous "a high quality photo" prompt
-            becomes a condition, even though it is still weak and neutral. We
-            will use CFG with $\gamma=7$ all throughout all Part A experiments
-            starting from here.
+            prompt, i.e., ""({<code>nothing</code>} is in the middle). Then, our
+            previous "a high quality photo" prompt becomes a condition, even
+            though it is still weak and neutral. We will use CFG with $\gamma=7$
+            all throughout all Part A experiments starting from here.
           </p>
           <h4>Implementation & Results</h4>
           <p>
             Implementation of CFG is straightforward, we just need to modify our
             <code>iterative_denoise</code> function to compute both conditional
             and unconditional noise estimates, and combine them via equation
-            (4). The modified code snippet is shown below.
+            (4).
           </p>
-          <figure class="code-card">
-            <p>
-              <em>Code Snippet:</em>
-              implement CFG in <code>iterative_denoise</code>
-            </p>
-            <pre><code class="language-python">def iterative_denoise_cfg(im_noisy, i_start, prompt_embeds, uncond_prompt_embeds, timesteps, scale=7, display=True):
-  # ==== my modifications ====
-  image = im_noisy.half().to(device)
-  prompt_embeds = prompt_embeds.half().to(device)
-  uncond_prompt_embeds = uncond_prompt_embeds.half().to(device)
-  # ==== end of modifications ====
-
-  with torch.no_grad():
-    for i in range(i_start, len(timesteps) - 1):
-      # Get timesteps
-      t = timesteps[i]
-      prev_t = timesteps[i+1]
-
-      # Get `alpha_cumprod`, `alpha_cumprod_prev`, `alpha`, `beta`
-      # ===== your code here! =====
-      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
-      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
-      alpha = alpha_cumprod / alpha_cumprod_prev
-      beta = 1 - alpha
-      # ==== end of code ====
-
-      # Get cond noise estimate
-      model_output = stage_1.unet(
-          image,
-          t,
-          encoder_hidden_states=prompt_embeds,
-          return_dict=False
-      )[0]
-
-      # Get uncond noise estimate
-      uncond_model_output = stage_1.unet(
-          image,
-          t,
-          encoder_hidden_states=uncond_prompt_embeds,
-          return_dict=False
-      )[0]
-
-      # Split estimate into noise and variance estimate
-      noise_est, predicted_variance = torch.split(model_output, image.shape[1], dim=1)
-      uncond_noise_est, _ = torch.split(uncond_model_output, image.shape[1], dim=1)
-
-      # Compute the CFG noise estimate based on equation 4
-      # ===== your code here! =====
-      epsilon_u = uncond_noise_est
-      epsilon_c = noise_est
-      epsilon = epsilon_u + scale * (epsilon_c - epsilon_u)
-      # ==== end of code ====
-
-
-      # Get `pred_prev_image`, the next less noisy image.
-      # ===== your code here! =====
-      # compute `x_0` using one-step denoising
-      x_t = image
-      w_xt = 1 / torch.sqrt(alpha_cumprod)
-      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
-      x_0 = w_xt * x_t - w_sigma * epsilon # use cfg epsilon here
-      
-      # compute `pred_prev_image` (x_{t'})
-      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
-      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
-      xt_prev = w_x0 * x_0 + w_xt * x_t
-      pred_prev_image = add_variance(predicted_variance, t, xt_prev)
-      # ==== end of code ====
-
-      image = pred_prev_image
-
-    clean = image.cpu().detach().numpy()
-
-    return clean</code></pre>
-          </figure>
           <p>
             With CFG, let's again sample some images from scratch and see how it
             improves the quality. Here I picked
@@ -1029,93 +856,14 @@
           </p>
           <h4>Implementation & Results</h4>
           <p>
-            The implementation of the <code>inpaint</code> function is shown
-            below, which modifies the denoising loop in
-            <code>iterative_denoise_cfg</code> to apply the mask at every step;
-            the modified part is marked accordingly.
+            The implementation of the <code>inpaint</code> function can be
+            easily obtained by simply modifying the denoising loop in
+            <code>iterative_denoise_cfg</code> to apply the mask at every step.
           </p>
-          <figure class="code-card">
-            <p>
-              <em>Code Snippet:</em>
-              implement <code>inpaint</code>
-            </p>
-            <pre><code class="language-python">def inpaint(original_image, mask, prompt_embeds, uncond_prompt_embeds, timesteps, scale=7, display=True):
-  # ==== my modifications ====
-  image = torch.randn_like(original_image).to(device).half()
-  original_image = original_image.to(device).half()
-  mask = mask.to(device).half()
-  prompt_embeds = prompt_embeds.to(device).half()
-  uncond_prompt_embeds = uncond_prompt_embeds.to(device).half()
-  # ==== end of modifications ====
-
-  # use your previous `iterative_denoise_cfg` function and make the appropriate changes
-  with torch.no_grad():
-    # ==== new code for range ====
-    for i in range(len(timesteps) - 1):
-    # ==== end of new code ====
-      # Get timesteps
-      t = timesteps[i]
-      prev_t = timesteps[i+1]
-
-      # ==== new code for inpainting ====
-      x_orig_forward = forward(original_image, t)
-      image = mask * image + (1 - mask) * x_orig_forward
-      # ==== end of new code ====
-
-      # Get `alpha_cumprod`, `alpha_cumprod_prev`, `alpha`, `beta`
-      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
-      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
-      alpha = alpha_cumprod / alpha_cumprod_prev
-      beta = 1 - alpha
-
-      # Get cond noise estimate
-      model_output = stage_1.unet(
-          image,
-          t,
-          encoder_hidden_states=prompt_embeds,
-          return_dict=False
-      )[0]
-
-      # Get uncond noise estimate
-      uncond_model_output = stage_1.unet(
-          image,
-          t,
-          encoder_hidden_states=uncond_prompt_embeds,
-          return_dict=False
-      )[0]
-
-      # Split estimate into noise and variance estimate
-      noise_est, predicted_variance = torch.split(model_output, image.shape[1], dim=1)
-      uncond_noise_est, _ = torch.split(uncond_model_output, image.shape[1], dim=1)
-
-      # Compute the CFG noise estimate based on equation 4
-      epsilon_u = uncond_noise_est
-      epsilon_c = noise_est
-      epsilon = epsilon_u + scale * (epsilon_c - epsilon_u)
-
-      # Get `pred_prev_image`, the next less noisy image.
-      # compute `x_0` using one-step denoising
-      x_t = image
-      w_xt = 1 / torch.sqrt(alpha_cumprod)
-      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
-      x_0 = w_xt * x_t - w_sigma * epsilon # use cfg epsilon here
-      
-      # compute `pred_prev_image` (x_{t'})
-      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
-      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
-      xt_prev = w_x0 * x_0 + w_xt * x_t
-      pred_prev_image = add_variance(predicted_variance, t, xt_prev)
-
-      image = pred_prev_image
-
-    clean = image.cpu().detach().numpy()
-
-    return clean</code></pre>
-          </figure>
           <p>
-            With the above function, let's try inpainting on the Campanile and 2
-            of my own images. For better results, I tried multiple seeds and
-            picked the one that looks interesting to myself.
+            With the implemented function, let's try inpainting on the Campanile
+            and 2 of my own images. For better results, I tried multiple seeds
+            and picked the one that looks interesting to myself.
           </p>
           <figure class="figure-center">
             <div>
@@ -1258,113 +1006,12 @@
           <h4>Implementation & Results</h4>
           <p>
             There are multiple orthogonal transformations we can use, here I
-            implement the $\text{flip}(\cdot)$ function that flips the image
-            both horizontally and vertically, i.e., a 180-degree rotation. The
-            code snippet of the modified denoising function is shown below.
-          </p>
-          <figure class="code-card">
-            <p>
-              <em>Code Snippet:</em>
-              implement Visual Anagrams in
-              <code>iterative_denoise_visual_anagrams</code>
-            </p>
-            <pre><code class="language-python">def make_flip_illusion(image, i_start, prompt_embeds, uncond_prompt_embeds, timesteps, scale=7, display=True):
-  # initialize inputs
-  image = image.half().to(device)
-  # two prompt embeddings
-  prompt_embeds_1, prompt_embeds_2 = prompt_embeds[:]
-  prompt_embeds_1 = prompt_embeds_1.half().to(device)
-  prompt_embeds_2 = prompt_embeds_2.half().to(device)
-  uncond_prompt_embeds = uncond_prompt_embeds.half().to(device)
-
-  with torch.no_grad():
-    for i in range(i_start, len(timesteps)-1):
-      # get timesteps
-      t = timesteps[i]
-      prev_t = timesteps[i+1]
-
-      # get 'alpha_cumprod', 'alpha_cumprod_prev', 'alpha', 'beta'
-      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
-      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
-      alpha = alpha_cumprod / alpha_cumprod_prev
-      beta = 1 - alpha
-
-      ## prompt 1 (no flip)
-      # get cond noise estimate
-      model_output_1 = stage_1.unet(
-        image,
-        t,
-        encoder_hidden_states=prompt_embeds_1,
-        return_dict=False
-      )[0]
-      noise_est_1, predicted_variance_1 = torch.split(model_output_1, image.shape[1], dim=1)
-
-      # uncond noise estimate
-      uncond_model_output_1 = stage_1.unet(
-        image,
-        t,
-        encoder_hidden_states=uncond_prompt_embeds,
-        return_dict=False
-      )
-      uncond_noise_est_1, _ = torch.split(uncond_model_output_1[0], image.shape[1], dim=1)
-
-      ## prompt 2 (flipped)
-      # flip image both horizontally and vertically
-      image_flipped = torch.flip(image, dims=[2,3])
-      # get cond noise estimate
-      model_output_2 = stage_1.unet(
-        image_flipped,
-        t,
-        encoder_hidden_states=prompt_embeds_2,
-        return_dict=False
-      )[0]
-      noise_est_2, _ = torch.split(model_output_2, image.shape[1], dim=1)
-
-      # uncond noise estimate
-      uncond_model_output_2 = stage_1.unet(
-        image_flipped,
-        t,
-        encoder_hidden_states=uncond_prompt_embeds,
-        return_dict=False
-      )
-      uncond_noise_est_2, _ = torch.split(uncond_model_output_2[0], image.shape[1], dim=1)
-      
-      # compute the CFG noise estimates for both prompts
-      epsilon_u1 = uncond_noise_est_1
-      epsilon_u2 = uncond_noise_est_2
-      epsilon_c1 = noise_est_1
-      epsilon_c2 = noise_est_2
-      epsilon_1 = epsilon_u1 + scale * (epsilon_c1 - epsilon_u1)
-      epsilon_2 = epsilon_u2 + scale * (epsilon_c2 - epsilon_u2)
-      # flip epsilon_2 back
-      epsilon_2 = torch.flip(epsilon_2, dims=[2,3])
-      # average the two epsilons
-      epsilon = (epsilon_1 + epsilon_2) / 2.0
-
-      # Get `pred_prev_image`, the next less noisy image.
-      # compute `x_0` using one-step denoising
-      x_t = image
-      w_xt = 1 / torch.sqrt(alpha_cumprod)
-      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
-      x_0 = w_xt * x_t - w_sigma * epsilon # use cfg epsilon here
-      
-      # compute `pred_prev_image` (x_{t'})
-      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
-      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
-      xt_prev = w_x0 * x_0 + w_xt * x_t
-      pred_prev_image = add_variance(predicted_variance_1, t, xt_prev)
-
-      image = pred_prev_image
-
-    clean = image.cpu().detach().numpy()
-
-    return clean</code></pre>
-          </figure>
-          <p>
-            Two example visual anagrams created with the above function are
-            shown below. In both cases, the images can be interpreted as
-            different scenes before and after a 180-degree rotation (animated as
-            follows). They are sampled with <code>seed = 28</code> and
+            first used the $\text{flip}(\cdot)$ function that flips the image
+            both horizontally and vertically, i.e., a 180-degree rotation. Two
+            example visual anagrams created with the flip function are shown
+            below. In both cases, the images can be interpreted as different
+            scenes before and after a 180-degree rotation (animated as follows).
+            They are sampled with <code>seed = 28</code> and
             <code>seed = 2</code>, respectively.
           </p>
           <div class="anagrams-grid">
@@ -1433,120 +1080,11 @@
           <p>
             In my implementation, I use Gaussian filters for both low- and
             high-pass filtering, with a <code>kernel_size = 33</code> and
-            <code>sigma = 2</code> for the low-pass filter. The code snippet of
-            the modified denoising function is shown below.
-          </p>
-          <figure class="code-card">
-            <p>
-              <em>Code Snippet:</em>
-              implement Hybrid Images in
-              <code>iterative_denoise_hybrid_images</code>
-            </p>
-            <pre><code class="language-python">def make_hybrids(image, i_start, prompt_embeds, uncond_prompt_embeds, timesteps, scale=7, display=True):
-  # initialize inputs
-  image = image.half().to(device)
-  # two prompt embeddings
-  prompt_embeds_1, prompt_embeds_2 = prompt_embeds[:]
-  prompt_embeds_1 = prompt_embeds_1.half().to(device)
-  prompt_embeds_2 = prompt_embeds_2.half().to(device)
-  uncond_prompt_embeds = uncond_prompt_embeds.half().to(device)
-
-  with torch.no_grad():
-    for i in range(i_start, len(timesteps)-1):
-      # get timesteps
-      t = timesteps[i]
-      prev_t = timesteps[i+1]
-
-      # get 'alpha_cumprod', 'alpha_cumprod_prev', 'alpha', 'beta'
-      alpha_cumprod = alphas_cumprod[t].to(image.device).type(image.dtype)
-      alpha_cumprod_prev = alphas_cumprod[prev_t].to(image.device).type(image.dtype)
-      alpha = alpha_cumprod / alpha_cumprod_prev
-      beta = 1 - alpha
-
-      ## prompt 1 (low freq)
-      # get cond noise estimate
-      model_output_1 = stage_1.unet(
-        image,
-        t,
-        encoder_hidden_states=prompt_embeds_1,
-        return_dict=False
-      )[0]
-      noise_est_1, predicted_variance_1 = torch.split(model_output_1, image.shape[1], dim=1)
-
-      # uncond noise estimate
-      uncond_model_output_1 = stage_1.unet(
-        image,
-        t,
-        encoder_hidden_states=uncond_prompt_embeds,
-        return_dict=False
-      )
-      uncond_noise_est_1, _ = torch.split(uncond_model_output_1[0], image.shape[1], dim=1)
-
-      ## prompt 2 (high freq)
-      # get cond noise estimate
-      model_output_2 = stage_1.unet(
-        image,
-        t,
-        encoder_hidden_states=prompt_embeds_2,
-        return_dict=False
-      )[0]
-      noise_est_2, _ = torch.split(model_output_2, image.shape[1], dim=1)
-
-      # uncond noise estimate
-      uncond_model_output_2 = stage_1.unet(
-        image,
-        t,
-        encoder_hidden_states=uncond_prompt_embeds,
-        return_dict=False
-      )
-      uncond_noise_est_2, _ = torch.split(uncond_model_output_2[0], image.shape[1], dim=1)
-      
-      # compute the CFG noise estimates for both prompts
-      epsilon_u1 = uncond_noise_est_1
-      epsilon_u2 = uncond_noise_est_2
-      epsilon_c1 = noise_est_1
-      epsilon_c2 = noise_est_2
-      epsilon_1 = epsilon_u1 + scale * (epsilon_c1 - epsilon_u1)
-      epsilon_2 = epsilon_u2 + scale * (epsilon_c2 - epsilon_u2)
-      # low-pass to epsilon_1 and high-pass to epsilon_2
-      epsilon_1_low = TF.gaussian_blur(
-        epsilon_1,
-        kernel_size=33,
-        sigma=2
-      )
-
-      epsilon_2_high = epsilon_2 - TF.gaussian_blur(
-        epsilon_2,
-        kernel_size=33,
-        sigma=2
-      )
-      # combine two epsilons
-      epsilon = epsilon_1_low + epsilon_2_high
-
-      # Get `pred_prev_image`, the next less noisy image.
-      # compute `x_0` using one-step denoising
-      x_t = image
-      w_xt = 1 / torch.sqrt(alpha_cumprod)
-      w_sigma = torch.sqrt((1 - alpha_cumprod) / (alpha_cumprod))
-      x_0 = w_xt * x_t - w_sigma * epsilon # use cfg epsilon here
-      
-      # compute `pred_prev_image` (x_{t'})
-      w_x0 = (torch.sqrt(alpha_cumprod_prev) * beta) / (1 - alpha_cumprod)
-      w_xt = (torch.sqrt(alpha) * (1 - alpha_cumprod_prev)) / (1 - alpha_cumprod)
-      xt_prev = w_x0 * x_0 + w_xt * x_t
-      pred_prev_image = add_variance(predicted_variance_1, t, xt_prev)
-
-      image = pred_prev_image
-
-    clean = image.cpu().detach().numpy()
-
-    return clean</code></pre>
-          </figure>
-          <p>
-            Two example hybrid images are shown and animated below. They are
-            generated with <code>seed = 8</code> and <code>seed = 36</code>,
-            respectively, and can be interpreted as different scenes when viewed
-            up close versus from afar.
+            <code>sigma = 2</code> for the low-pass filter. Two example hybrid
+            images are shown and animated below. They are generated with
+            <code>seed = 8</code> and <code>seed = 36</code>, respectively, and
+            can be interpreted as different scenes when viewed up close versus
+            from afar.
           </p>
 
           <div class="hybrids-grid">
@@ -1610,9 +1148,7 @@
             The implementation of this approximated skew transformation is
             straightforward once we have our previous flip anagram code, i.e.,
             just replace the flip operation with the skew operation. Here I'm
-            not repeating the full code for
-            <code>make_skew_illusion</code> function, but just show the skew
-            operation code snippet below.
+            showing the skew operation code snippet below.
           </p>
           <figure class="code-card">
             <p>
@@ -2524,9 +2060,9 @@ up1 = c2 * up1 + t2
             It can be observed that, even though the quality is still not as
             good as the class-conditioned model (due to the lack of class
             information and CFG), the generated digits are much clearer and
-            distinguishable than before. Therefore, improving the model
-            capacity is indeed helpful to enhance the generation quality when
-            class conditioning is not available.
+            distinguishable than before. Therefore, improving the model capacity
+            is indeed helpful to enhance the generation quality when class
+            conditioning is not available.
           </p>
         </section>
 
