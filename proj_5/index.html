@@ -501,7 +501,7 @@
             image). In my implementation, the stride was set to $30$.
           </p>
           <p>
-            On the <code>i</code>th step, i.e.,
+            On the <code>i-</code>th step, i.e.,
             $t=$<code>strided_timesteps[i]</code>, we denoise the image to
             obtain a less noisy image $t'=$<code>strided_timesteps[i+1]</code>,
             the calculation follows: $$ x_{t'} =
@@ -510,14 +510,12 @@
             v_\sigma,\tag{A.3} $$ where:
           </p>
           <ul>
-            <li>$x_t$ is your image at timestep $t$</li>
+            <li>$x_t$ is our image at timestep $t$</li>
             <li>
-              $x_{t'}$ is your noisy image at timestep $t'$ where $t' < t$ (less
+              $x_{t'}$ is our noisy image at timestep $t'$ where $t' < t$ (less
               noisy)
             </li>
-            <li>
-              $\bar\alpha_t$ is defined by `alphas_cumprod`, as explained above.
-            </li>
+            <li>$\bar\alpha_t$ is defined by <code>alphas_cumprod</code></li>
             <li>$\alpha_t = \bar\alpha_t / \bar\alpha_{t'}$</li>
             <li>$\beta_t = 1 - \alpha_t$</li>
             <li>
@@ -591,7 +589,7 @@
           <h3><u>A.1.5: Diffusion Model Sampling</u></h3>
           <p>
             Diffusion models can not only denoise images, but also able to
-            generate images from scratch by starting from pure noise, i.e.,
+            generate new images from scratch by starting from pure noise, i.e.,
             setting <code>i_start = 0</code> and passing random noise as our
             <code>im_noisy</code> to our
             <code>iterative_denoise</code> function. Recall that DeepFloyd
@@ -627,7 +625,7 @@
             Obviously, the sampled images are of high quality and look like real
             photos, hence, they lie on the natural image manifold somehow.
             However, some of them still look a bit strange and unnatural. We
-            will fix this issue in the next part with CFG!
+            will fix this issue in the next part with Classifier-Free Guidance!
           </p>
         </section>
 
@@ -641,36 +639,34 @@
             <a href="https://arxiv.org/abs/2207.12598"
               >Classifier-Free Guidance (CFG)</a
             >, where we compute both a conditional ($\epsilon_c$) and an
-            unconditional ($\epsilon_u$) noise estimate through: $$ \epsilon =
-            \epsilon_u + \gamma(\epsilon_c - \epsilon_u),\tag{A.4} $$ where
-            $\gamma$ controls the strength of CFG. From the equation, we can see
-            that $\gamma=0$ corresponds to an unconditional noise estimate, and
-            $\gamma=1$ corresponds to a conditional noise estimate. By setting
-            $\gamma > 1$, we can push the noise estimate further towards the
-            conditional direction, which encourages the model to generate images
-            that better align with the text prompt, hence improving quality.
-            More details can be found in
+            unconditional ($\epsilon_u$) noise to get our new noise estimate
+            through: $$ \epsilon = \epsilon_u + \gamma(\epsilon_c -
+            \epsilon_u),\tag{A.4} $$ where $\gamma$ controls the strength of
+            CFG. From the equation, we can see that $\gamma=0$ corresponds to an
+            unconditional noise estimate, and $\gamma=1$ corresponds to a
+            conditional noise estimate. By setting $\gamma > 1$, we can push the
+            noise estimate further towards the conditional direction, which
+            encourages the model to generate images that better align with the
+            text prompt, hence improving quality. More details can be found in
             <a href="https://sander.ai/2022/05/26/guidance.html"
               >this blog post</a
             >.
           </p>
           <p>
             In practice, the "unconditional" embedding corresponds to an empty
-            prompt, i.e., ""({<code>nothing</code>} is in the middle). Then, our
-            previous "a high quality photo" prompt becomes a condition, even
-            though it is still weak and neutral. We will use CFG with $\gamma=7$
-            all throughout all Part A experiments starting from here.
+            prompt, i.e., ""(nothing is in the middle). Then, our previous "a
+            high quality photo" prompt becomes a condition, even though it is
+            still weak and neutral. We will use CFG with $\gamma=7$ all
+            throughout all Part A experiments starting from here.
           </p>
           <h4>Implementation & Results</h4>
           <p>
-            Implementation of CFG is straightforward, we just need to modify our
+            Implementation of CFG (<code>iterative_denoise_cfg</code>) is
+            straightforward, we just need to modify our previous
             <code>iterative_denoise</code> function to compute both conditional
             and unconditional noise estimates, and combine them via equation
-            (4).
-          </p>
-          <p>
-            With CFG, let's again sample some images from scratch and see how it
-            improves the quality. Here I picked
+            (4). With CFG, let's again sample some images from scratch and see
+            how it improves the quality. Here I picked
             <code>seeds = [0, 2, 3, 4, 5]</code> and set <code>scale = 7</code>.
           </p>
           <figure class="figure-center">
@@ -698,7 +694,8 @@
           <h3><u>A.1.7: Image-to-image Translation</u></h3>
           <p>
             The diffusion model can also be used to edit images, as we already
-            saw in part 1.4 when we add noise to an image and then denoise it.
+            saw in part 1.4 when we add noise to an image and then denoise it,
+            where the reconstructed images were different from the original one.
             This works because the diffusion model has to "hallucinate" new
             things to fill in the missing details in the noised image, hence,
             the model has to be "creative" and force the noisy image back onto
@@ -844,12 +841,10 @@
           <p>
             We can also use the same procedure to perform image inpainting
             (following the
-            <a href="https://arxiv.org/abs/2201.09865">RePaint</a> paper).
-          </p>
-          <p>
-            The inpainting process uses a binary mask $\mathbf{m}$ and applies
-            it to the original image $x_{orig}$, and creates a new image that
-            has the same content where $\mathbf{m} = 0$ and new content where
+            <a href="https://arxiv.org/abs/2201.09865">RePaint</a> paper). The
+            inpainting process uses a binary mask $\mathbf{m}$ and applies it to
+            the original image $x_{orig}$, and creates a new image that has the
+            same content where $\mathbf{m} = 0$ and new content where
             $\mathbf{m} = 1$. This can be achieved by "forcing" the obtained
             $x_t$ at every step in the denoising loop to have the same pixels as
             $x_{orig}$ where $\mathbf{m} = 0$, i.e, $$ x_t \gets \mathbf{m} x_t
@@ -860,8 +855,6 @@
             The implementation of the <code>inpaint</code> function can be
             easily obtained by simply modifying the denoising loop in
             <code>iterative_denoise_cfg</code> to apply the mask at every step.
-          </p>
-          <p>
             With the implemented function, let's try inpainting on the Campanile
             and 2 of my own images. For better results, I tried multiple seeds
             and picked the one that looks interesting to myself.
@@ -1135,10 +1128,11 @@
           </p>
           <h3><u>1. Approximated Skew Anagram</u></h3>
           <p>
-            Here we implement the skew transformation to create visual anagrams.
-            Since the true skew transformation that inplemented via homography
-            is not "orthogonal" as it relies on interpolation, we instead
-            implement an approximated version mentioned in the paper, i.e.,
+            Here I will implement the skew transformation to create visual
+            anagrams. Since the true skew transformation that inplemented via
+            homography is not "orthogonal" as it relies on interpolation, we
+            instead implement an approximated version mentioned in the paper,
+            i.e.,
             <em>skewing by columns of pixels by different displacements</em>.
             This column-roll skew preserves pixel values and acts as a
             permutation matrix, thus satisfying the orthogonality constraint
@@ -1219,7 +1213,10 @@
           </figure>
           <p>
             One example negative anagram is shown below. The image was sampled
-            with <code>seed = 68</code>.
+            with <code>seed = 68</code>. (Note: To be honest, this negative
+            anagram is so good and was out of my expectations, I couldn't even
+            tell the opposite interpretation before taking the negatives of each
+            of them!)
           </p>
           <figure class="figure-center">
             <div>
@@ -1238,7 +1235,7 @@
           <p>
             I wanted to create a logo that a bear hidding behind a filter filled
             with some features of UC Berkeley. To do so, I sketched such a bear
-            by myself in Procreate, and filling the $3 \times 3$ kernel with
+            in Procreate, and filling the $3 \times 3$ kernel with
             <a href="https://alumni.berkeley.edu/about-us/brand/color/"
               >colors representing UC Berkeley</a
             >. The original sketch is shown below.
@@ -1257,7 +1254,7 @@
           <p>
             Then, I used this sketch as the input image to perform
             text-conditional image-to-image translation to refine it. The prompt
-            I used is "A clean, minimalistic course logo of the computer vision
+            I used was "A clean, minimalistic course logo of the computer vision
             course of the University of California at Berkeley. A cute cartoon
             bear peeks from behind a square sign. Inside the square is a simple
             3x3 convolution kernel diagram. Smooth bold outlines, flat look,
@@ -1307,9 +1304,9 @@
           <h3><u>B.1: Training a Single-Step Denoising UNet</u></h3>
           <o>
             Before jumping into flow matching, let's warmup by building a simple
-            one-step denosier $D_{\theta}$ such that maps a noisy image $z$ to a
-            clean image $x$, which can be trained over the $\mathcal{L}_2$ loss
-            between the denoised output and the ground truth clean image:
+            one-step denosier $D_{\theta}$ such that maping a noisy image $z$ to
+            a clean image $x$, which can be trained over the $\mathcal{L}_2$
+            loss between the denoised output and the ground truth clean image:
             $$\mathcal{L}(\theta) = \mathbb{E}_{z,x} \left[ \| D_{\theta}(z) - x
             \|_2^2 \right].\tag{B.1}$$
           </o>
@@ -1362,7 +1359,7 @@
             training set ($x \sim \mathcal{D}_{\text{MNIST}}$), and the noise
             image $z$ is generated by adding Gaussian noise to $x$: $$z = x +
             \sigma \epsilon, \quad\text{where}\,\, \epsilon \sim \mathcal{N}(0,
-            I),\tag{B.2}$$ where the $\sigma$ controls the noise level.
+            \mathbf{I}),\tag{B.2}$$ where the $\sigma$ controls the noise level.
           </p>
           <h4>Visualization of the Noising Process</h4>
           <p>
@@ -1473,9 +1470,9 @@
           </figure>
           <p>
             It is obvious that the denoiser performs well on noise levels close
-            to the training level, while it gradually degrades when denoising on
-            higher levels, which is expected as it did not learned to handle
-            such high noise during training.
+            to or lower than the training level, while it gradually degrades
+            when denoising on higher levels, which is expected as it did not
+            learned to handle such highly noisy cases during training.
           </p>
         </section>
 
@@ -1483,15 +1480,12 @@
           <h4><u>B1.2.3 Denoising Pure Noise</u></h4>
           <p>
             Recall that to make the denoising model generative, as discussed in
-            Part A, we can apply it to pure Gaussian noise and denoise it,
-            hence, $z = \epsilon \sim \mathcal{N}(0, \mathbf{I})$ as input,
-            instead of being generated from $x$ anymore.
-          </p>
-          <p>
-            Now, let's try this with our one-step UNet denoiser. Here we follow
-            exactly the same procedure as in B.1.2.1 to train a UNet, where the
-            only change is that $z = \epsilon \sim \mathcal{N}(0, \mathbf{I})$
-            as our input.
+            Part A, we can apply to denoise pure noise, hence, $z = \epsilon
+            \sim \mathcal{N}(0, \mathbf{I})$ as input, instead of being
+            generated from $x$ anymore. Now, let's try this with our one-step
+            UNet denoiser. Here we follow exactly the same procedure as in
+            B.1.2.1 to train a UNet, where the only change is that $z = \epsilon
+            \sim \mathcal{N}(0, \mathbf{I})$ as our input.
           </p>
           <h4>Results & Discussion</h4>
           <p>
@@ -1553,9 +1547,9 @@
           <p>
             We just saw that one-step denoising from pure noise fails to
             generate diverse new samples due to the limitation of the training
-            objective. Instead, we need to gradually denoise from noise to data
-            through multiple steps, as we did in Part A with diffusion models.
-            Here, we will do so via
+            objective. Instead, we need to gradually denoise from pure noise to
+            data through multiple steps, like what we did in Part A with
+            diffusion models. Here, we will do so via
             <a href="https://arxiv.org/abs/2210.02747">flow matching</a>, where
             our UNet model will learn to predict the "flow" that transports
             noise to the clean data manifold over continuous time, i.e., an
@@ -1584,9 +1578,9 @@
             $$u(x_t,t) = \frac{d}{d t} x_t = x_1 - x_0.\tag{B.4}$$
           </p>
           <p>
-            Therefore, our aim is to learn a $u_t(x_t, t)$ with our UNet model
-            that approximates this flow $u(x_t, t) = x_1 - x_0$ through the
-            objective below: $$ \mathcal{L}(\theta) = \mathbb{E}_{x_0 \sim
+            Therefore, our aim is to learn a $u_{\theta}(x_t, t)$ with our UNet
+            model that approximates this flow $u(x_t, t) = x_1 - x_0$ through
+            the objective below: $$ \mathcal{L}(\theta) = \mathbb{E}_{x_0 \sim
             p_0(x_0), x_1 \sim p_1(x_1), t\sim \text{Unif}(0,1)} \left[ \|(x_1 -
             x_0) - u_{\theta}(x_t, t)\|^2_2 \right].\tag{B.5}$$
           </p>
@@ -1690,8 +1684,10 @@ up1 = up1 * t2
           </div>
           <p>
             The training process follows Algorithm 1 shown below, and the
-            training loss curve is also attached afterwards, indicating a stable
-            convergence.
+            training loss curve is also attached afterwards, where we can
+            observe a sharp decrease at the beginning and then a stable
+            convergence. The training process is quite fast, which is good for
+            our implementation.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -1725,7 +1721,7 @@ up1 = up1 * t2
             We can now sample new images from pure noise by iteratively solving
             the ODE defined by our trained UNet flow matching model. The
             sampling procedure follows Algorithm 2 shown below, which is a
-            simple Euler method with fixed step size $1/T$, and here we set
+            simple Euler method with fixed step size $1/T$, and here I set
             $T=50$.
           </p>
           <figure class="figure-center shrink-80">
@@ -1748,7 +1744,9 @@ up1 = up1 * t2
             generate more realistic and diverse digits as training proceeds.
             However, there are still some artifacts that make them far from
             perfect, though they are resonably good for only $10$ epochs of
-            training.
+            training. An improved version of this time-conditional only model
+            can be found in the Bells & Whistles section in the end of this
+            blog.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -1797,15 +1795,15 @@ up1 = up1 * t2
           </p>
           <p>
             In practice, we can add 2 more <code>FCBlock</code> to our UNet,
-            where the class conditioning vector $c$ will first be represented as
-            a one-hot vector and then passed into these
+            where the class conditioning vector $c$ will first be encoded as a
+            one-hot vector and then passed into these
             <code>FCBlock</code> modules to be embeded and injected into the
             UNet. To make our model able to work without being conditioned on
-            class labels, which is important to implement classifier-free
-            guidance during sampling, we randomly drop the class conditioning
-            vector $c$ to be an all-zero vector with a probability of $10\%$
-            during training, hence, $p_{uncond} = 0.1$. The peudo-code for
-            conditioning our UNet on both time and class labels is shown below.
+            class labels, which is important to implement CFG during sampling,
+            we randomly drop the class conditioning vector $c$ to be an all-zero
+            vector with a probability of $10\%$ during training, hence,
+            $p_{uncond} = 0.1$. The peudo-code for conditioning our UNet on both
+            time and class labels is shown below.
           </p>
           <figure class="code-card">
             <p>
@@ -1880,7 +1878,7 @@ up1 = c2 * up1 + t2
             matching model. With this class conditioning, we can further apply
             CFG during sampling to enhance the generation quality. The sampling
             procedure follows Algorithm B.4 shown below, where the guidance
-            scale $\gamma$ is set to $5.0$ in our experiments.
+            scale $\gamma$ is set to $5.0$ in my experiments.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -1899,8 +1897,8 @@ up1 = c2 * up1 + t2
           <p>
             The sampled new images at checkpoints of epochs $1$, $5$, and $10$
             are shown below. It is obvious that the model generates more
-            realistic and diverse digits with class conditioning and CFG,
-            compared to the time-conditioned only model.
+            realistic digits with class conditioning and CFG, compared to the
+            time-conditioned only model.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -1966,7 +1964,7 @@ up1 = c2 * up1 + t2
           <p>
             Also, let's sample some new images via this model at the last epoch
             and compare with the previous one with the scheduler, shown below.
-            From the sampled results, we can not visually tell which one is
+            From the sampled results, I can not visually tell which one is
             better, meaning that fixing a smaller learning rate and training
             longer without the scheduler works just as well as using the
             scheduler.
