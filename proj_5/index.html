@@ -186,8 +186,8 @@
             classical and learned denoising, classifier-free guidance,
             image-to-image translation, inpainting, and multi-view optical
             illusions. These techniques allow us to understand how modern
-            diffusion models such as DeepFloyd IF generate and edit images.
-            Then, in part B, we will build and train our own
+            diffusion models generate and edit images. Then, in part B, we will
+            build and train our own
             <a href="https://arxiv.org/abs/2210.02747">flow matching</a> model
             on MNIST.
           </p>
@@ -376,9 +376,10 @@
               href="https://cal-cs180.github.io/fa25/hw/proj5/assets/campanile.jpg"
               >Campanile</a
             >
-            at noise levels of <code>[250, 500, 750]</code> through the forward
-            process are visualized below. As expected, the images become
-            increasingly noisy as the timestep increases.
+            at noise levels of <code>[250, 500, 750]</code> through a
+            <code>forward</code> function (implemented following the
+            aforementioned equations) are visualized below. As expected, the
+            images become increasingly noisy as the timestep increases.
           </p>
           <figure class="figure-center">
             <div>
@@ -405,11 +406,11 @@
             after denoising are shown below. In my implementation, I used
             <code>sigma = 2</code> and
             <code>kernel_size = 6 * sigma + 1</code> for the Gaussian filter,
-            i.e., covering over $99$% mass of the Gaussian distribution.
-            Apparently, Gaussian blur is ineffective at removing this level of
-            Gaussian additive noise, especially because the noisy image has lost
-            high-frequency structure. Blurring only smooths the image, but
-            cannot reconstruct lost details.
+            i.e., covering over $99$% mass of the Gaussian density. Apparently,
+            the Gaussian blur is ineffective at removing this level of noise.
+            This can be mainly attributed to the fact that those noisy images
+            have lost high-frequency structure, while blurring only smooths the
+            image, hence, it cannot reconstruct lost details.
           </p>
           <figure class="figure-center">
             <div>
@@ -446,12 +447,12 @@
             Again, the same noisy images at timesteps
             <code>t = [250, 500, 750]</code> are denoised using the one-step
             denoising function we implemented. The results are shown below,
-            which demonstrate a significant improvement over classical
+            which demonstrate a significant improvement over classical Gaussian
             denoising. The pretrained diffusion model effectively recovers much
             of the lost detail and structure in the images. However, with the
             increase of noise level, some artifacts start to appear in this
             one-step approach, indicating that a single denoising step may not
-            be sufficient for very noisy images.
+            be sufficient for very noisy cases.
           </p>
           <figure class="figure-center">
             <div>
@@ -2030,7 +2031,12 @@ up1 = c2 * up1 + t2
             </div>
           </div>
           <p>
-            The training loss curve for this enhanced model is shown below, which indicates a quick and sharp reduction in loss at the beginning. Although we cannot directly see the convergence at later epoches due to the scale of the plot, we can still observe improvements in the sampled results shown later, implying that the model is still learning.
+            The training loss curve for this enhanced model is shown below,
+            which indicates a quick and sharp reduction in loss at the
+            beginning. Although we cannot directly see the convergence at later
+            epoches due to the scale of the plot, we can still observe
+            improvements in the sampled results shown later, implying that the
+            model is still learning.
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2047,7 +2053,10 @@ up1 = c2 * up1 + t2
           </figure>
           <h4>Sampling Results & Comparison</h4>
           <p>
-            The last epoch's checkpoint was used to sample new images from the same pure noises as in B.2.3 for fair comparison. The sampled results are shown below (first image), alongside with those from B.2.3 (second image).
+            The last epoch's checkpoint was used to sample new images from the
+            same pure noises as in B.2.3 for fair comparison. The sampled
+            results are shown below (first image), alongside with those from
+            B.2.3 (second image).
           </p>
           <figure class="figure-center shrink-80">
             <div>
@@ -2057,7 +2066,10 @@ up1 = c2 * up1 + t2
                 data-full="media/part-b/bw_better_time_conditioned_last_epoch_samples.png"
                 alt="Sampled Images at Training The Last Epoch"
               />
-              <figcaption>Sampled Images at Training Epoch 50 of Better Time-Conditioned UNet Flow Matching</figcaption>
+              <figcaption>
+                Sampled Images at Training Epoch 50 of Better Time-Conditioned
+                UNet Flow Matching
+              </figcaption>
             </div>
             <div>
               <img
@@ -2067,7 +2079,8 @@ up1 = c2 * up1 + t2
                 alt="Sampled Images at Different Training Epoch 10"
               />
               <figcaption>
-                Sampled Images at Different Training Epoch 10 of Original Time-Conditioned UNet Flow Matching
+                Sampled Images at Different Training Epoch 10 of Original
+                Time-Conditioned UNet Flow Matching
               </figcaption>
             </div>
           </figure>
