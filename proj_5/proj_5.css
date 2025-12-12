@@ -1323,3 +1323,72 @@ main.with-sidebar {
 .hybrid-item:hover .hybrid-frame img {
   animation-play-state: paused;
 }
+
+/* =========================
+   Print (Cmd+P) fixes
+   =========================
+   Root cause: this page uses a fixed-height, scrollable main container
+   (main.with-sidebar) and hides body overflow to avoid dual scrollbars.
+   Browsers typically print only the *visible* portion of scroll containers.
+   For print, we must restore normal document flow so the full page paginates.
+*/
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body {
+    padding-top: 0 !important; /* remove fixed topbar offset */
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Disable app-like scrolling container so the whole document prints */
+  main.with-sidebar {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide navigation + overlays (not useful in print and may clip content) */
+  .top-navbar,
+  #sidebar,
+  .sidebar,
+  #sidebar-overlay,
+  .overlay,
+  .lightbox {
+    display: none !important;
+  }
+
+  /* Avoid clipping caused by fixed widths/panels in print */
+  .main-center {
+    max-width: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Make links readable on paper */
+  a,
+  a:link,
+  a:visited {
+    color: #000 !important;
+    text-decoration: underline !important;
+  }
+
+  /* Reduce the chance of awkward splits */
+  figure,
+  pre,
+  table {
+    break-inside: avoid;
+  }
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+}
