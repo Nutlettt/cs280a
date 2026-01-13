@@ -1,43 +1,27 @@
 /* ================================
-  Theme toggle with memory & system
-  ================================ */
+   Theme toggle with memory & system
+   ================================ */
 
 const STORAGE_KEY = 'theme';
 const DEFAULT_THEME = 'light';
 const root = document.documentElement;
-const body = document.body;
 const themeBtn = document.getElementById('theme-toggle');
 
 function applyTheme(theme) {
-  const dark = theme === 'dark';
-  const light = !dark;
-
   root.setAttribute('data-theme', theme);
-  body.setAttribute('data-theme', theme);
-
-  const darkClasses = ['dark', 'dark-theme', 'theme-dark', 'mode-dark'];
-  const lightClasses = ['light', 'light-theme', 'theme-light', 'mode-light'];
-
-  darkClasses.forEach(cls => {
-    root.classList.toggle(cls, dark);
-    body.classList.toggle(cls, dark);
-  });
-  lightClasses.forEach(cls => {
-    root.classList.toggle(cls, light);
-    body.classList.toggle(cls, light);
-  });
-
   localStorage.setItem(STORAGE_KEY, theme);
   if (themeBtn) {
-    themeBtn.title = `Switch to ${dark ? 'light' : 'dark'} theme`;
+    themeBtn.title = `Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`;
   }
 }
 
+// Initialize theme from storage or default
 applyTheme(localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME);
 
+// Toggle on button click
 themeBtn?.addEventListener('click', () => {
-  const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
+  const current = root.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
 });
 
 /* =====================
